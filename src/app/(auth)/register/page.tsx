@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion"; // এনিমেশনের জন্য
+import { motion } from "framer-motion";
 import { FiMail, FiLock, FiUser, FiArrowRight, FiShield } from "react-icons/fi";
+import { toast } from "react-hot-toast"; // টোস্ট ইম্পোর্ট করা হলো
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,12 +17,38 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // রেজিস্ট্রেশন লজিক...
-    alert("Registration Successful! Please login.");
-    router.push("/login");
+    
+    // ১. লোডিং শুরু হওয়ার মেসেজ
+    const toastId = toast.loading("Creating your account...");
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // ২. সাকসেস মেসেজ দেখানো (যদি ব্যাকএন্ড থেকে সাকসেস আসে)
+        toast.success(data.message || "Registration Successful!", { id: toastId });
+        
+        // ২ সেকেন্ড পর লগইন পেজে পাঠিয়ে দেওয়া
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      } else {
+        // ৩. যদি কোনো ভুল হয় (যেমন: ইমেইল আগে থেকেই আছে)
+        toast.error(data.message || "Registration failed!", { id: toastId });
+      }
+    } catch (error) {
+      // ৪. যদি নেটওয়ার্ক এরর হয়
+      toast.error("Network error! Please try again.", { id: toastId });
+    }
   };
 
-  // এনিমেশন ভেরিয়েন্ট
+  // এনিমেশন ভেরিয়েন্ট
   const containerVars = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
@@ -92,7 +119,6 @@ export default function RegisterPage() {
             </motion.div>
           ))}
 
-          {/* রোল সিলেকশন এনিমেশন */}
           <motion.div variants={itemVars} className="grid grid-cols-2 gap-3 pt-2">
              {['customer', 'seller'].map((r) => (
                <button 
@@ -129,7 +155,6 @@ export default function RegisterPage() {
         </motion.p>
       </motion.div>
 
-      {/* ৩. সাইড ডেকোরেশন (Modern Abstract) */}
       <div className="absolute right-[-100px] top-1/2 -translate-y-1/2 text-[#111420] text-[300px] font-black select-none -z-0 rotate-90 leading-none">
         MEDICINE
       </div>
