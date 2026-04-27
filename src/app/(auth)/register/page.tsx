@@ -12,19 +12,18 @@ export default function RegisterPage() {
     name: "",
     email: "",
     password: "",
-    role: "customer"
+    role: "customer" // ডিফল্ট কাস্টমার থাকবে
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // ১. লোডিং মেসেজ
     const toastId = toast.loading("Creating your account...");
 
     try {
-      // ✅ এখানে আপনার Vercel এর Environment Variable থেকে সরাসরি পাথ তৈরি হবে
-      // আপনার লিঙ্কে v1 না থাকলে সরাসরি /auth/register এ হিট করবে
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+      // ডাবল স্ল্যাশ এড়ানোর জন্য URL ক্লিন করা
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+      
+      const res = await fetch(`${baseUrl}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -33,19 +32,16 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // ২. সফল হলে মেসেজ দেখাবে এবং ২ সেকেন্ড পর লগইন পেজে নিয়ে যাবে
         toast.success(data.message || "Registration Successful!", { id: toastId });
         setTimeout(() => {
           router.push("/login");
         }, 2000);
       } else {
-        // ৩. ইমেইল আগে থাকলে বা অন্য সমস্যা হলে এরর মেসেজ দেখাবে
         toast.error(data.message || "Registration failed!", { id: toastId });
       }
     } catch (error) {
-      // ৪. নেটওয়ার্ক বা সার্ভার অফ থাকলে এই এরর দেখাবে
-      console.error("Live Register Error:", error);
-      toast.error("Network error! Make sure your backend server is active.", { id: toastId });
+      console.error("Register Error:", error);
+      toast.error("Network error! Make sure your server is active.", { id: toastId });
     }
   };
 
@@ -67,7 +63,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-20 relative overflow-hidden bg-[#040610]">
       
-      {/* ডিজাইন এনিমেশন */}
+      {/* ব্যাকগ্রাউন্ড এনিমেশন */}
       <motion.div 
         animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
         transition={{ duration: 20, repeat: Infinity }}
@@ -119,17 +115,17 @@ export default function RegisterPage() {
             </motion.div>
           ))}
 
-          {/* Role Selection (Customer/Seller) */}
-          <motion.div variants={itemVars} className="grid grid-cols-2 gap-3 pt-2">
-             {['customer', 'seller'].map((r) => (
+          {/* ✅ ৩টি রোল বাটন (Admin সহ) */}
+          <motion.div variants={itemVars} className="grid grid-cols-3 gap-2 pt-2">
+             {['customer', 'seller', 'admin'].map((r) => (
                <button 
                  key={r}
                  type="button"
                  onClick={() => setFormData({...formData, role: r})}
-                 className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                 className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
                    formData.role === r 
                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20' 
-                   : 'bg-white/5 border-white/10 text-slate-500'
+                   : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20'
                  }`}
                >
                  {r}
