@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation"; // রিডাইরেক্টের জন্য
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FiMail, FiLock, FiArrowRight } from "react-icons/fi";
-import { toast } from "react-hot-toast"; // টোস্টের জন্য
+import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -17,8 +17,9 @@ export default function LoginPage() {
     const toastId = toast.loading("Verifying credentials...");
 
     try {
-      // ব্যাকএন্ড API কল (আপনার API রুট অনুযায়ী)
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      // ✅ এখানে পাথটি আপনার ব্যাকএন্ডের সাথে মিলিয়ে সরাসরি /auth/login দেওয়া হয়েছে
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+      const res = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -28,11 +29,13 @@ export default function LoginPage() {
 
       if (res.ok) {
         // ১. ডাটাবেসের ইউজার ডাটা দিয়ে লগইন করা
+        // আপনার ব্যাকএন্ডে টোকেন থাকলে সেটিও এখানে হ্যান্ডেল করতে পারেন
         login(data.user); 
-        toast.success(`Welcome, ${data.user.name}!`, { id: toastId });
+        toast.success(`Welcome back, ${data.user.name}!`, { id: toastId });
 
-        // ২. রোল অনুযায়ী সঠিক ড্যাশবোর্ডে পাঠানো
-        const role = data.user.role.toLowerCase();
+        // ২. রোল অনুযায়ী রিডাইরেক্ট (Case Insensitive Check)
+        const role = data.user.role?.toLowerCase();
+        
         if (role === "admin") {
           router.push("/admin/dashboard");
         } else if (role === "seller") {
@@ -41,10 +44,12 @@ export default function LoginPage() {
           router.push("/"); // সাধারণ কাস্টমার হোমে যাবে
         }
       } else {
+        // ব্যাকএন্ড থেকে আসা মেসেজ সরাসরি দেখানো
         toast.error(data.message || "Invalid Email or Password!", { id: toastId });
       }
     } catch (error) {
-      toast.error("Network error! Is your server running?", { id: toastId });
+      console.error("Login error:", error);
+      toast.error("Network error! Server may be sleeping. Please try again.", { id: toastId });
     }
   };
 
@@ -64,7 +69,9 @@ export default function LoginPage() {
           <div className="relative">
             <FiMail className="absolute left-5 top-5 text-slate-600" />
             <input 
-              type="email" placeholder="Email Address" required
+              type="email" 
+              placeholder="Email Address" 
+              required
               className="w-full bg-white/5 border border-white/5 px-12 py-5 rounded-2xl text-white outline-none focus:border-blue-600 transition-all font-medium"
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -72,13 +79,18 @@ export default function LoginPage() {
           <div className="relative">
             <FiLock className="absolute left-5 top-5 text-slate-600" />
             <input 
-              type="password" placeholder="Password" required
+              type="password" 
+              placeholder="Password" 
+              required
               className="w-full bg-white/5 border border-white/5 px-12 py-5 rounded-2xl text-white outline-none focus:border-blue-600 transition-all font-medium"
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           
-          <button type="submit" className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:text-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-600/20">
+          <button 
+            type="submit" 
+            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:text-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-600/20"
+          >
             Sign In <FiArrowRight size={18} />
           </button>
         </form>

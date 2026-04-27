@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { FiMail, FiLock, FiUser, FiArrowRight, FiShield } from "react-icons/fi";
-import { toast } from "react-hot-toast"; // টোস্ট ইম্পোর্ট করা হলো
+import { toast } from "react-hot-toast";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,10 +18,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // ১. লোডিং শুরু হওয়ার মেসেজ
+    // ১. লোডিং মেসেজ
     const toastId = toast.loading("Creating your account...");
 
     try {
+      // ✅ এখানে আপনার Vercel এর Environment Variable থেকে সরাসরি পাথ তৈরি হবে
+      // আপনার লিঙ্কে v1 না থাকলে সরাসরি /auth/register এ হিট করবে
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,24 +33,23 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // ২. সাকসেস মেসেজ দেখানো (যদি ব্যাকএন্ড থেকে সাকসেস আসে)
+        // ২. সফল হলে মেসেজ দেখাবে এবং ২ সেকেন্ড পর লগইন পেজে নিয়ে যাবে
         toast.success(data.message || "Registration Successful!", { id: toastId });
-        
-        // ২ সেকেন্ড পর লগইন পেজে পাঠিয়ে দেওয়া
         setTimeout(() => {
           router.push("/login");
         }, 2000);
       } else {
-        // ৩. যদি কোনো ভুল হয় (যেমন: ইমেইল আগে থেকেই আছে)
+        // ৩. ইমেইল আগে থাকলে বা অন্য সমস্যা হলে এরর মেসেজ দেখাবে
         toast.error(data.message || "Registration failed!", { id: toastId });
       }
     } catch (error) {
-      // ৪. যদি নেটওয়ার্ক এরর হয়
-      toast.error("Network error! Please try again.", { id: toastId });
+      // ৪. নেটওয়ার্ক বা সার্ভার অফ থাকলে এই এরর দেখাবে
+      console.error("Live Register Error:", error);
+      toast.error("Network error! Make sure your backend server is active.", { id: toastId });
     }
   };
 
-  // এনিমেশন ভেরিয়েন্ট
+  // এনিমেশন সেটিংস
   const containerVars = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
@@ -66,7 +67,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-20 relative overflow-hidden bg-[#040610]">
       
-      {/* ১. আধুনিক ব্যাকগ্রাউন্ড এনিমেশন */}
+      {/* ডিজাইন এনিমেশন */}
       <motion.div 
         animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
         transition={{ duration: 20, repeat: Infinity }}
@@ -78,7 +79,6 @@ export default function RegisterPage() {
         className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-indigo-600/10 rounded-full blur-[80px]" 
       />
 
-      {/* ২. মেইন কার্ড */}
       <motion.div 
         variants={containerVars}
         initial="hidden"
@@ -119,6 +119,7 @@ export default function RegisterPage() {
             </motion.div>
           ))}
 
+          {/* Role Selection (Customer/Seller) */}
           <motion.div variants={itemVars} className="grid grid-cols-2 gap-3 pt-2">
              {['customer', 'seller'].map((r) => (
                <button 
@@ -154,10 +155,6 @@ export default function RegisterPage() {
           Already a member? <Link href="/login" className="text-blue-500 hover:text-white transition-colors underline-offset-4 underline">Sign In</Link>
         </motion.p>
       </motion.div>
-
-      <div className="absolute right-[-100px] top-1/2 -translate-y-1/2 text-[#111420] text-[300px] font-black select-none -z-0 rotate-90 leading-none">
-        MEDICINE
-      </div>
     </div>
   );
 }
