@@ -1,45 +1,44 @@
-// Vercel বা Local - সব জায়গার জন্য ডাইনামিক URL
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// ১. এখানে আপনার রেন্ডার ইউআরএল সরাসরি ব্যাকআপ হিসেবে দিয়ে দিন
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://storemedistore.onrender.com/api";
 
 const fetcher = async (endpoint: string, options: RequestInit = {}) => {
-  // যদি URL সেট করা না থাকে তার জন্য চেক
-  if (!BASE_URL) {
-    console.error("API URL is not defined in Environment Variables");
+  // ২. ইউআরএল চেক করার সময় স্ল্যাশ (/) হ্যান্ডেল করা
+  const fullUrl = `${BASE_URL}${endpoint}`;
+
+  try {
+    const res = await fetch(fullUrl, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      cache: 'no-store',
+    });
+
+    // ৩. যদি রেসপন্স এম্পটি হয় বা এরর থাকে
+    const responseData = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      // ব্যাকএন্ড থেকে আসা এরর মেসেজ দেখাবে
+      throw new Error(responseData.message || "API request failed");
+    }
+
+    return responseData;
+  } catch (error: any) {
+    console.error("Fetch Error:", error.message);
+    // যাতে আপনার পেজ ক্র্যাশ না করে শুধু এরর থ্রো করে
+    throw error;
   }
-
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    // লাইভ সাইটে ডাটা আপডেট পেতে cache: 'no-store' ব্যবহার করা ভালো
-    cache: 'no-store',
-  });
-
-  const responseData = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(responseData.message || "Something went wrong with the API");
-  }
-
-  return responseData;
 };
 
 export const api = {
-  // --- Auth ---
   auth: {
-    login: (data: any) => 
-      fetcher("/auth/login", { method: "POST", body: JSON.stringify(data) }),
-    register: (data: any) => 
-      fetcher("/auth/register", { method: "POST", body: JSON.stringify(data) }),
+    login: (data: any) => fetcher("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+    register: (data: any) => fetcher("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   },
-
-  // --- Medicines ---
   medicines: {
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
-    // সেলারের জন্য ওষুধ অ্যাড করা
     create: (data: any, token: string) => 
       fetcher("/medicines", { 
         method: "POST", 
@@ -52,13 +51,9 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` } 
       }),
   },
-
-  // --- Categories ---
   categories: {
     getAll: () => fetcher("/categories"),
   },
-
-  // --- Orders ---
   orders: {
     create: (data: any, token: string) => 
       fetcher("/orders", { 
@@ -66,16 +61,11 @@ export const api = {
         body: JSON.stringify(data),
         headers: { Authorization: `Bearer ${token}` } 
       }),
-    getUserOrders: (token: string) => 
-      fetcher("/orders/user", { headers: { Authorization: `Bearer ${token}` } }),
-    getSellerOrders: (token: string) => 
-      fetcher("/orders/seller", { headers: { Authorization: `Bearer ${token}` } }),
+    getUserOrders: (token: string) => fetcher("/orders/user", { headers: { Authorization: `Bearer ${token}` } }),
+    getSellerOrders: (token: string) => fetcher("/orders/seller", { headers: { Authorization: `Bearer ${token}` } }),
   },
-
-  // --- Admin ---
   admin: {
-    getAllUsers: (token: string) => 
-      fetcher("/admin/users", { headers: { Authorization: `Bearer ${token}` } }),
+    getAllUsers: (token: string) => fetcher("/admin/users", { headers: { Authorization: `Bearer ${token}` } }),
     updateStatus: (id: string, status: string, token: string) => 
       fetcher(`/admin/orders/${id}`, { 
         method: "PATCH", 
