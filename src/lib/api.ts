@@ -1,8 +1,10 @@
-// ১. এখানে আপনার রেন্ডার ইউআরএল সরাসরি ব্যাকআপ হিসেবে দিয়ে দিন
+// src/lib/api.ts
+
+// ১. রেন্ডার ইউআরএল সরাসরি দেওয়া আছে
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://storemedistore.onrender.com/api";
 
 const fetcher = async (endpoint: string, options: RequestInit = {}) => {
-  // ২. ইউআরএল চেক করার সময় স্ল্যাশ (/) হ্যান্ডেল করা
+  // ২. ইউআরএল তৈরি করা
   const fullUrl = `${BASE_URL}${endpoint}`;
 
   try {
@@ -15,18 +17,16 @@ const fetcher = async (endpoint: string, options: RequestInit = {}) => {
       cache: 'no-store',
     });
 
-    // ৩. যদি রেসপন্স এম্পটি হয় বা এরর থাকে
+    // ৩. রেসপন্স হ্যান্ডেল করা
     const responseData = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // ব্যাকএন্ড থেকে আসা এরর মেসেজ দেখাবে
-      throw new Error(responseData.message || "API request failed");
+      throw new Error(responseData.message || responseData.error || "API request failed");
     }
 
     return responseData;
   } catch (error: any) {
     console.error("Fetch Error:", error.message);
-    // যাতে আপনার পেজ ক্র্যাশ না করে শুধু এরর থ্রো করে
     throw error;
   }
 };
@@ -39,8 +39,9 @@ export const api = {
   medicines: {
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
+    // এখানে /add যোগ করা হয়েছে কারণ আপনার ব্যাকএন্ড রাউটে /add আছে
     create: (data: any, token: string) => 
-      fetcher("/medicines", { 
+      fetcher("/medicines/add", { 
         method: "POST", 
         body: JSON.stringify(data),
         headers: { Authorization: `Bearer ${token}` } 
