@@ -17,7 +17,6 @@ export default function LoginPage() {
     const toastId = toast.loading("Verifying credentials...");
 
     try {
-      // API URL ঠিক করা
       const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "https://storemedistore.onrender.com/api";
       
       const res = await fetch(`${baseUrl}/auth/login`, {
@@ -29,27 +28,40 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // ১. টোকেনটি লোকাল স্টোরেজে সেভ করা (যাতে Add/Delete কাজ করে)
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        } else if (data.accessToken) {
-          // যদি ব্যাকএন্ড থেকে accessToken নামে আসে
-          localStorage.setItem("token", data.accessToken);
+        // ব্যাকএন্ড থেকে টোকেন এবং ইউজার ডাটা বের করা
+        const token = data.token || data.accessToken || data.data?.token;
+        const user = data.user || data.data?.user;
+
+        if (token) {
+          // ১. লোকাল স্টোরেজে সেভ করা
+          localStorage.setItem("token", token);
+          
+          // ২. ভ্যানিলা জাভাস্ক্রিপ্ট দিয়ে কুকি সেভ করা (৭ দিনের জন্য)
+          const expires = new Date();
+          expires.setDate(expires.getDate() + 7);
+          document.cookie = `token=${token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax;`;
         }
 
-        // ২. ইউজারের ডাটা কনটেক্সটে সেভ করা
-        login(data.user); 
-        toast.success(`Welcome back, ${data.user.name}!`, { id: toastId });
+        if (user) {
+          // আপনার অন্যান্য পেজের জন্য medistore_user সেভ করা
+          localStorage.setItem("medistore_user", JSON.stringify(user));
+          // অথ কনটেক্সট আপডেট করা
+          login(user);
+        }
 
-        // ৩. রোল অনুযায়ী সঠিক পেজে পাঠানো
-        const userRole = data.user.role?.toUpperCase(); // বড় হাতের অক্ষরে চেক করা নিরাপদ
+        toast.success(`Welcome back, ${user?.name || 'User'}!`, { id: toastId });
+
+        // রোল অনুযায়ী রিডাইরেক্ট করা
+        const userRole = user?.role?.toUpperCase(); 
         
         if (userRole === "ADMIN") {
           router.push("/admin/dashboard");
         } else if (userRole === "SELLER") {
           router.push("/seller/dashboard");
+        } else if (userRole === "CUSTOMER") {
+          router.push("/profile"); 
         } else {
-          router.push("/"); // কাস্টমার হলে হোমে
+          router.push("/");
         }
 
       } else {
@@ -57,7 +69,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Network error! Server may be sleeping. Please try again.", { id: toastId });
+      toast.error("Network error! Please check your connection.", { id: toastId });
     }
   };
 
