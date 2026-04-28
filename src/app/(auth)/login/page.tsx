@@ -17,8 +17,9 @@ export default function LoginPage() {
     const toastId = toast.loading("Verifying credentials...");
 
     try {
-      // ✅ এখানে পাথটি আপনার ব্যাকএন্ডের সাথে মিলিয়ে সরাসরি /auth/login দেওয়া হয়েছে
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+      // API URL ঠিক করা
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "https://storemedistore.onrender.com/api";
+      
       const res = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -28,23 +29,30 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // ১. ডাটাবেসের ইউজার ডাটা দিয়ে লগইন করা
-        // আপনার ব্যাকএন্ডে টোকেন থাকলে সেটিও এখানে হ্যান্ডেল করতে পারেন
+        // ১. টোকেনটি লোকাল স্টোরেজে সেভ করা (যাতে Add/Delete কাজ করে)
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        } else if (data.accessToken) {
+          // যদি ব্যাকএন্ড থেকে accessToken নামে আসে
+          localStorage.setItem("token", data.accessToken);
+        }
+
+        // ২. ইউজারের ডাটা কনটেক্সটে সেভ করা
         login(data.user); 
         toast.success(`Welcome back, ${data.user.name}!`, { id: toastId });
 
-        // ২. রোল অনুযায়ী রিডাইরেক্ট (Case Insensitive Check)
-        const role = data.user.role?.toLowerCase();
+        // ৩. রোল অনুযায়ী সঠিক পেজে পাঠানো
+        const userRole = data.user.role?.toUpperCase(); // বড় হাতের অক্ষরে চেক করা নিরাপদ
         
-        if (role === "admin") {
+        if (userRole === "ADMIN") {
           router.push("/admin/dashboard");
-        } else if (role === "seller") {
+        } else if (userRole === "SELLER") {
           router.push("/seller/dashboard");
         } else {
-          router.push("/"); // সাধারণ কাস্টমার হোমে যাবে
+          router.push("/"); // কাস্টমার হলে হোমে
         }
+
       } else {
-        // ব্যাকএন্ড থেকে আসা মেসেজ সরাসরি দেখানো
         toast.error(data.message || "Invalid Email or Password!", { id: toastId });
       }
     } catch (error) {
@@ -66,8 +74,8 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="relative">
-            <FiMail className="absolute left-5 top-5 text-slate-600" />
+          <div className="relative group">
+            <FiMail className="absolute left-5 top-5 text-slate-600 group-focus-within:text-blue-600 transition-colors" />
             <input 
               type="email" 
               placeholder="Email Address" 
@@ -76,8 +84,8 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="relative">
-            <FiLock className="absolute left-5 top-5 text-slate-600" />
+          <div className="relative group">
+            <FiLock className="absolute left-5 top-5 text-slate-600 group-focus-within:text-blue-600 transition-colors" />
             <input 
               type="password" 
               placeholder="Password" 
