@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 interface Medicine {
   id: string;
   name: string;
-  category: string;
+  category: { name: string } | string; // এপিআই রেসপন্সে অবজেক্ট হিসেবে আসছে
   price: number;
   stock: number;
 }
@@ -23,18 +23,20 @@ export default function SellerMedicines() {
     name: "",
     price: "",
     stock: "",
-    manufacturer: "Beximco Pharma", // ব্যাকএন্ডে এটা লাগে
-    categoryId: "9a539a21-2b99-422c-8aff-adb1ce801782", // আপনার ডাটাবেসের ক্যাটাগরি আইডি
-    sellerId: "5aba1f9a-ca7f-4a87-b300-5331d8860940", // আপনার ADMIN/Seller আইডি
+    manufacturer: "Beximco Pharma",
+    categoryId: "9a539a21-2b99-422c-8aff-adb1ce80f782", 
+    sellerId: "1a06f77b-b71f-4cf8-9f15-f14badc61128", // আপনার আসল সেলার আইডি আপডেট করা হয়েছে
   });
 
   const fetchMedicines = async () => {
     setLoading(true);
     try {
       const response = await api.medicines.getAll();
-      const finalData = Array.isArray(response) ? response : (response?.data || []);
+      // আপনার এপিআই রেসপন্স ফরম্যাট অনুযায়ী response.data ব্যবহার করা হয়েছে
+      const finalData = Array.isArray(response.data) ? response.data : [];
       setMedicines(finalData);
     } catch (error: any) {
+      console.error("Fetch Error:", error);
       setMedicines([]);
     } finally {
       setLoading(false);
@@ -51,12 +53,11 @@ export default function SellerMedicines() {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""; 
       
-      // ব্যাকএন্ডের চাহিদা অনুযায়ী ডাটা পাঠানো
       await api.medicines.create({
         ...formData,
         price: Number(formData.price),
         stock: Number(formData.stock),
-        description: "Standard medicine description" // ব্যাকএন্ডে লাগলে এটাও যাবে
+        description: "Standard medicine description"
       }, token);
       
       toast.success("Medicine Added Successfully!");
@@ -64,7 +65,7 @@ export default function SellerMedicines() {
       fetchMedicines(); 
       setFormData({ ...formData, name: "", price: "", stock: "" });
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "Something went wrong");
+      toast.error(error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -75,9 +76,9 @@ export default function SellerMedicines() {
   );
 
   return (
-    // ... আপনার বাকি ডিজাইন (Return পার্ট) একদম ঠিক আছে, ওটা বদলানোর দরকার নেই
     <div className="p-6 lg:p-10 min-h-screen bg-[#02040a]">
-       {/* আপনার ডিজাইন কোড এখানে থাকবে */}
+       {/* এখানে আপনার টেবিল এবং ডিজাইন কোড আগের মতোই থাকবে */}
+       {/* টেবিল রো এর ভেতরে category দেখানোর সময় med.category.name ব্যবহার করুন */}
     </div>
   );
 }
