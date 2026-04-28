@@ -1,77 +1,121 @@
 // src/lib/api.ts
 
-// ১. রেন্ডার ইউআরএল সরাসরি দেওয়া আছে
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://storemedistore.onrender.com/api";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://storemedistore.onrender.com/api";
 
-const fetcher = async (endpoint: string, options: RequestInit = {}) => {
-  // ২. ইউআরএল তৈরি করা
+// 🔑 SSR safe token getter
+const getToken = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("token");
+  }
+  return null;
+};
+
+// 🔑 headers builder
+const buildHeaders = (customHeaders?: HeadersInit) => {
+  const headers = new Headers(customHeaders);
+
+  // default
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  // token auto add
+  const token = getToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  return headers;
+};
+
+const fetcher = async (
+  endpoint: string,
+  options: RequestInit = {}
+) => {
   const fullUrl = `${BASE_URL}${endpoint}`;
 
   try {
     const res = await fetch(fullUrl, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      cache: 'no-store',
+      headers: buildHeaders(options.headers),
+      cache: "no-store",
     });
 
-    // ৩. রেসপন্স হ্যান্ডেল করা
-    const responseData = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      throw new Error(responseData.message || responseData.error || "API request failed");
+      throw new Error(data.message || data.error || "API request failed");
     }
 
-    return responseData;
+    return data;
   } catch (error: any) {
     console.error("Fetch Error:", error.message);
     throw error;
   }
 };
 
+// 📦 API methods
 export const api = {
   auth: {
-    login: (data: any) => fetcher("/auth/login", { method: "POST", body: JSON.stringify(data) }),
-    register: (data: any) => fetcher("/auth/register", { method: "POST", body: JSON.stringify(data) }),
+    login: (data: any) =>
+      fetcher("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+
+    register: (data: any) =>
+      fetcher("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   },
+
   medicines: {
     getAll: () => fetcher("/medicines"),
-    getById: (id: string) => fetcher(`/medicines/${id}`),
-   
-    create: (data: any, token: string) => 
-      fetcher("/medicines/add", { 
-        method: "POST", 
+
+    getById: (id: string) =>
+      fetcher(`/medicines/${id}`),
+
+    create: (data: any) =>
+      fetcher("/medicines/add", {
+        method: "POST",
         body: JSON.stringify(data),
-        headers: { Authorization: `Bearer ${token}` } 
       }),
-    delete: (id: string, token: string) => 
-      fetcher(`/medicines/${id}`, { 
-        method: "DELETE", 
-        headers: { Authorization: `Bearer ${token}` } 
+
+    delete: (id: string) =>
+      fetcher(`/medicines/${id}`, {
+        method: "DELETE",
       }),
   },
+
   categories: {
     getAll: () => fetcher("/categories"),
   },
+
   orders: {
-    create: (data: any, token: string) => 
-      fetcher("/orders", { 
-        method: "POST", 
+    create: (data: any) =>
+      fetcher("/orders", {
+        method: "POST",
         body: JSON.stringify(data),
-        headers: { Authorization: `Bearer ${token}` } 
       }),
-    getUserOrders: (token: string) => fetcher("/orders/user", { headers: { Authorization: `Bearer ${token}` } }),
-    getSellerOrders: (token: string) => fetcher("/orders/seller", { headers: { Authorization: `Bearer ${token}` } }),
+
+    getUserOrders: () =>
+      fetcher("/orders/user"),
+
+    getSellerOrders: () =>
+      fetcher("/orders/seller"),
   },
+
   admin: {
-    getAllUsers: (token: string) => fetcher("/admin/users", { headers: { Authorization: `Bearer ${token}` } }),
-    updateStatus: (id: string, status: string, token: string) => 
-      fetcher(`/admin/orders/${id}`, { 
-        method: "PATCH", 
+    getAllUsers: () =>
+      fetcher("/admin/users"),
+
+    updateStatus: (id: string, status: string) =>
+      fetcher(`/admin/orders/${id}`, {
+        method: "PATCH",
         body: JSON.stringify({ status }),
-        headers: { Authorization: `Bearer ${token}` } 
       }),
-  }
+  },
 };
