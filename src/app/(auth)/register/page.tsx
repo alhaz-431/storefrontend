@@ -12,7 +12,7 @@ export default function RegisterPage() {
     name: "",
     email: "",
     password: "",
-    role: "customer" // ডিফল্ট কাস্টমার থাকবে
+    role: "customer" 
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,23 +20,39 @@ export default function RegisterPage() {
     const toastId = toast.loading("Creating your account...");
 
     try {
-      // ডাবল স্ল্যাশ এড়ানোর জন্য URL ক্লিন করা
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+      // API URL ঠিক করা (প্রয়োজনে সরাসরি Render URL ব্যবহার করা হয়েছে)
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "https://storemedistore.onrender.com/api";
       
       const res = await fetch(`${baseUrl}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          role: formData.role.toUpperCase() // ব্যাকএন্ডের জন্য রোল বড় হাতের করা হলো
+        }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
+        // ✅ রেজিস্ট্রেশন সফল হলে টোকেনটি লোকাল স্টোরেজে সেভ করা (সবচেয়ে জরুরি)
+        const authToken = data.token || data.accessToken;
+        if (authToken) {
+          localStorage.setItem("token", authToken);
+        }
+
         toast.success(data.message || "Registration Successful!", { id: toastId });
+        
+        // সেলার হলে সরাসরি ড্যাশবোর্ডে পাঠানো, অন্যথায় লগইন পেজে
         setTimeout(() => {
-          router.push("/login");
-        }, 2000);
+          if (formData.role === "seller") {
+            router.push("/seller/dashboard");
+          } else {
+            router.push("/login");
+          }
+        }, 1500);
       } else {
+        // ব্যাকএন্ড থেকে আসা আসল এরর মেসেজটি দেখা যাবে
         toast.error(data.message || "Registration failed!", { id: toastId });
       }
     } catch (error) {
@@ -45,7 +61,6 @@ export default function RegisterPage() {
     }
   };
 
-  // এনিমেশন সেটিংস
   const containerVars = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
@@ -62,19 +77,12 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-20 relative overflow-hidden bg-[#040610]">
-      
-      {/* ব্যাকগ্রাউন্ড এনিমেশন */}
       <motion.div 
         animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
         transition={{ duration: 20, repeat: Infinity }}
         className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px]" 
       />
-      <motion.div 
-        animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }}
-        transition={{ duration: 15, repeat: Infinity }}
-        className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] bg-indigo-600/10 rounded-full blur-[80px]" 
-      />
-
+      
       <motion.div 
         variants={containerVars}
         initial="hidden"
@@ -115,7 +123,6 @@ export default function RegisterPage() {
             </motion.div>
           ))}
 
-          {/* ✅ ৩টি রোল বাটন (Admin সহ) */}
           <motion.div variants={itemVars} className="grid grid-cols-3 gap-2 pt-2">
              {['customer', 'seller', 'admin'].map((r) => (
                <button 

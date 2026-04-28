@@ -39,7 +39,7 @@ export const api = {
   medicines: {
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
-    // এখানে /add যোগ করা হয়েছে কারণ আপনার ব্যাকএন্ড রাউটে /add আছে
+   
     create: (data: any, token: string) => 
       fetcher("/medicines/add", { 
         method: "POST", 
