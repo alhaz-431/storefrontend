@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 
 export default function OrderDetailsPage() {
   const params = useParams();
-  // ✅ টাইপ এরর ফিক্স: id স্ট্রিং কিনা নিশ্চিত হওয়া
+  // ✅ টাইপ সেফটি নিশ্চিত করা
   const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : "";
   
   const router = useRouter();
@@ -18,10 +18,31 @@ export default function OrderDetailsPage() {
   useEffect(() => {
     const fetchOrderDetails = async () => {
       if (!id) return;
+
+      // 🛡️ ভার্সেল বিল্ড সেফটি এবং ইউজার আইডি চেক
+      if (typeof window === "undefined") return;
+      
+      const userData = localStorage.getItem("medistore_user");
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user?.id) {
+        console.error("User ID not found");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const response = await api.orders.getUserOrders(); 
-        const foundOrder = response.data.find((o: any) => o.id === id);
-        setOrder(foundOrder);
+        setLoading(true);
+        // ✅ FIXED: api.ts এর রিকোয়ারমেন্ট অনুযায়ী user.id পাঠানো হলো
+        const response = await api.orders.getUserOrders(user.id); 
+        
+        // ডাটা স্ট্রাকচার চেক করা (response.data অথবা সরাসরি response)
+        const allOrders = response.data || response;
+        
+        if (Array.isArray(allOrders)) {
+          const foundOrder = allOrders.find((o: any) => o.id === id);
+          setOrder(foundOrder);
+        }
       } catch (error) {
         console.error("Failed to load order details", error);
       } finally {
@@ -38,8 +59,11 @@ export default function OrderDetailsPage() {
   );
 
   if (!order) return (
-    <div className="min-h-screen bg-[#02040a] flex items-center justify-center text-white font-black italic uppercase">
-      Order Not Found
+    <div className="min-h-screen bg-[#02040a] flex items-center justify-center text-white font-black italic uppercase text-center p-6">
+      <div>
+        <p className="text-slate-500 mb-4">Order Not Found</p>
+        <button onClick={() => router.back()} className="text-emerald-500 text-xs border border-emerald-500/20 px-4 py-2 rounded-xl">GO BACK</button>
+      </div>
     </div>
   );
 
@@ -60,14 +84,13 @@ export default function OrderDetailsPage() {
               Order <span className="text-emerald-500">Invoice</span>
             </h1>
             <p className="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-bold mt-2">
-              {/* ✅ এখন আর toUpperCase() এ এরর দিবে না */}
               Transaction ID: #{id.slice(-8).toUpperCase()}
             </p>
           </div>
           <div className={`px-6 py-3 rounded-2xl border font-black uppercase text-[10px] tracking-widest ${
             order.status === 'DELIVERED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'
           }`}>
-            Status: {order.status}
+            Status: {order.status || "PENDING"}
           </div>
         </header>
 
@@ -88,7 +111,7 @@ export default function OrderDetailsPage() {
                     <Package size={20} />
                   </div>
                   <div>
-                    <h4 className="font-bold">{item.name || "Medicine Name"}</h4>
+                    <h4 className="font-bold">{item.name || "Medicine Item"}</h4>
                     <p className="text-[10px] text-slate-500 font-bold uppercase">Qty: {item.quantity}</p>
                   </div>
                 </div>
@@ -104,7 +127,7 @@ export default function OrderDetailsPage() {
                 <MapPin size={14} className="text-emerald-500" /> Delivery Address
               </h3>
               <p className="text-sm text-slate-400 leading-relaxed italic">
-                {order.address || "No address provided"}
+                {order.shippingAddress || order.address || "No address provided"}
               </p>
 
               <div className="h-px bg-white/10 my-8" />
@@ -115,7 +138,7 @@ export default function OrderDetailsPage() {
               <div className="space-y-3">
                 <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 tracking-tighter">
                   <span>Subtotal</span>
-                  <span>৳{order.totalAmount - 60}</span>
+                  <span>৳{(order.totalAmount || 0) - 60}</span>
                 </div>
                 <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 tracking-tighter">
                   <span>Shipping</span>
