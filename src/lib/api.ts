@@ -4,7 +4,7 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://storemedistore.onrender.com/api";
 
-// 🔑 টোকেন গেটার
+// 🔑 Token getter
 const getToken = () => {
   if (typeof window !== "undefined") {
     return localStorage.getItem("token");
@@ -12,7 +12,7 @@ const getToken = () => {
   return null;
 };
 
-// 🔑 হেডার বিল্ডার
+// 🔑 Headers builder
 const buildHeaders = (customHeaders?: HeadersInit) => {
   const headers = new Headers(customHeaders);
 
@@ -28,7 +28,7 @@ const buildHeaders = (customHeaders?: HeadersInit) => {
   return headers;
 };
 
-// 🚀 মেইন ফেচার ফাংশন
+// 🚀 Main fetcher
 const fetcher = async (endpoint: string, options: RequestInit = {}) => {
   const fullUrl = `${BASE_URL}${endpoint}`;
 
@@ -52,7 +52,7 @@ const fetcher = async (endpoint: string, options: RequestInit = {}) => {
   }
 };
 
-// 📦 আপনার সমস্ত এপিআই মেথড
+// 📦 API Object
 export const api = {
   auth: {
     login: (data: any) =>
@@ -78,7 +78,7 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    
+
     update: (id: string, data: any) =>
       fetcher(`/medicines/${id}`, {
         method: "PATCH",
@@ -102,10 +102,16 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    // ✅ FIXED: এখন এটি userId গ্রহণ করবে এবং ডাইনামিক URL তৈরি করবে
-    getUserOrders: (userId: string) => fetcher(`/orders/user/${userId}`),
+    // 👇 সব user orders
+    getUserOrders: (userId: string) =>
+      fetcher(`/orders/user/${userId}`),
 
+    // 👇 seller orders
     getSellerOrders: () => fetcher("/orders/seller"),
+
+    // ✅ FIX: single order by id (এটাই missing ছিল)
+    getOrderById: (id: string) =>
+      fetcher(`/orders/${id}`),
   },
 
   admin: {
