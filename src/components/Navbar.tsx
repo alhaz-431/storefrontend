@@ -1,13 +1,15 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react"; // আপাতত স্টেট দিয়ে চেক করার জন্য
-import { FiShoppingCart, FiUser, FiActivity, FiLayout, FiLogOut } from "react-icons/fi";
+import { useState } from "react"; 
+import { usePathname } from "next/navigation"; // এক্টিভ লিংক দেখানোর জন্য
+import { FiShoppingCart, FiUser, FiActivity, FiLayout, FiLogOut, FiHome } from "react-icons/fi";
 
 export default function Navbar() {
-  // ডামি ইউজার স্টেট (লগইন করা থাকলে true দিন এবং রোল চেক করুন)
-  // পরে আমরা এটা আসল AuthContext থেকে আনবো
+  const pathname = usePathname();
+  
+  // পরে এই স্টেটগুলো সরিয়ে useAuth() থেকে ডাটা নিবেন
   const [isLoggedIn, setIsLoggedIn] = useState(true); 
-  const [userRole, setUserRole] = useState("seller"); // admin, seller, অথবা customer
+  const [userRole, setUserRole] = useState("seller"); 
 
   return (
     <nav className="w-full h-20 bg-[#040610]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
@@ -23,11 +25,36 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-slate-400">
-          <Link href="/shop" className="hover:text-blue-500 transition-colors">Shop</Link>
-          <Link href="/categories" className="hover:text-blue-500 transition-colors">Categories</Link>
-          {/* যদি কাস্টমার হয় তবেই My Orders দেখাবে */}
+          {/* Home Link যোগ করা হয়েছে */}
+          <Link 
+            href="/" 
+            className={`flex items-center gap-1.5 transition-colors ${pathname === "/" ? "text-blue-500" : "hover:text-blue-500"}`}
+          >
+            <FiHome size={14} /> Home
+          </Link>
+
+          <Link 
+            href="/shop" 
+            className={`transition-colors ${pathname === "/shop" ? "text-blue-500" : "hover:text-blue-500"}`}
+          >
+            Shop
+          </Link>
+
+          <Link 
+            href="/categories" 
+            className={`transition-colors ${pathname === "/categories" ? "text-blue-500" : "hover:text-blue-500"}`}
+          >
+            Categories
+          </Link>
+
+          {/* যদি কাস্টমার হয় তবেই My Orders দেখাবে */}
           {isLoggedIn && userRole === "customer" && (
-             <Link href="/orders" className="hover:text-blue-500 transition-colors">My Orders</Link>
+             <Link 
+               href="/orders" 
+               className={`transition-colors ${pathname === "/orders" ? "text-blue-500" : "hover:text-blue-500"}`}
+             >
+               My Orders
+             </Link>
           )}
         </div>
 
@@ -39,7 +66,7 @@ export default function Navbar() {
             <span className="absolute top-0 right-0 bg-blue-600 text-[8px] text-white w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
           </Link>
 
-          {/* লগইন না থাকলে Login বাটন, থাকলে Dashboard বাটন */}
+          {/* লগইন এরিয়া */}
           {!isLoggedIn ? (
             <Link href="/login" className="flex items-center gap-2 bg-blue-600 hover:bg-white hover:text-blue-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20">
               <FiUser size={16} /> Login
