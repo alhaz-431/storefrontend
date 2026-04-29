@@ -28,30 +28,30 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // ব্যাকএন্ড থেকে টোকেন এবং ইউজার ডাটা বের করা
+        // ১. টোকেন এবং ইউজার ডাটা বের করা
         const token = data.token || data.accessToken || data.data?.token;
         const user = data.user || data.data?.user;
 
         if (token) {
-          // ১. লোকাল স্টোরেজে সেভ করা
+          // ২. লোকাল স্টোরেজে সেভ (এপিআই রিকোয়েস্টের জন্য)
           localStorage.setItem("token", token);
           
-          // ২. ভ্যানিলা জাভাস্ক্রিপ্ট দিয়ে কুকি সেভ করা (৭ দিনের জন্য)
+          // ৩. পিওর জাভাস্ক্রিপ্ট দিয়ে কুকি সেভ (মিডলওয়্যার রিডাইরেক্ট ফিক্স করার জন্য)
           const expires = new Date();
-          expires.setDate(expires.getDate() + 7);
+          expires.setDate(expires.getDate() + 7); // ৭ দিন মেয়াদ
           document.cookie = `token=${token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax;`;
         }
 
         if (user) {
-          // আপনার অন্যান্য পেজের জন্য medistore_user সেভ করা
+          // ৪. অন্যান্য পেজের জন্য ইউজার ডাটা সেভ
           localStorage.setItem("medistore_user", JSON.stringify(user));
-          // অথ কনটেক্সট আপডেট করা
+          // অথ কনটেক্সট আপডেট
           login(user);
         }
 
         toast.success(`Welcome back, ${user?.name || 'User'}!`, { id: toastId });
 
-        // রোল অনুযায়ী রিডাইরেক্ট করা
+        // ৫. রোল অনুযায়ী সঠিক ড্যাশবোর্ডে রিডাইরেক্ট
         const userRole = user?.role?.toUpperCase(); 
         
         if (userRole === "ADMIN") {
@@ -59,7 +59,7 @@ export default function LoginPage() {
         } else if (userRole === "SELLER") {
           router.push("/seller/dashboard");
         } else if (userRole === "CUSTOMER") {
-          router.push("/profile"); 
+          router.push("/profile"); // কাস্টমার এখন সরাসরি প্রোফাইলে যাবে
         } else {
           router.push("/");
         }
@@ -115,9 +115,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center mt-8 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-          Don't have an account? <Link href="/register" className="text-blue-500 hover:underline">Register Now</Link>
-        </p>
+        <div className="text-center mt-8 space-y-2">
+           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+            Don't have an account? <Link href="/register" className="text-blue-500 hover:underline">Register Now</Link>
+          </p>
+          <Link href="/" className="block text-[9px] text-slate-700 uppercase font-black hover:text-white transition-colors">
+            ← Back to Home
+          </Link>
+        </div>
       </div>
     </div>
   );
