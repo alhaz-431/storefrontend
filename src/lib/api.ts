@@ -4,16 +4,15 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://storemedistore.onrender.com/api";
 
-// 🔑 টোকেন গেটার - আপনার লোকাল স্টোরেজে থাকা 'token' কি ব্যবহার করা হয়েছে
+// 🔑 টোকেন গেটার
 const getToken = () => {
   if (typeof window !== "undefined") {
-    // আপনার ডাটা অনুযায়ী কি-এর নাম 'token'
     return localStorage.getItem("token");
   }
   return null;
 };
 
-// 🔑 হেডার বিল্ডার - অটোমেটিক টোকেন এবং কন্টেন্ট টাইপ সেট করবে
+// 🔑 হেডার বিল্ডার
 const buildHeaders = (customHeaders?: HeadersInit) => {
   const headers = new Headers(customHeaders);
 
@@ -23,7 +22,6 @@ const buildHeaders = (customHeaders?: HeadersInit) => {
 
   const token = getToken();
   if (token) {
-    // এটি ইনভ্যালিড টোকেন এরর সমাধান করবে
     headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -41,11 +39,9 @@ const fetcher = async (endpoint: string, options: RequestInit = {}) => {
       cache: "no-store",
     });
 
-    // রেসপন্স ডাটা হ্যান্ডলিং
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // সার্ভার থেকে আসা এরর মেসেজটি থ্রো করবে
       throw new Error(data.error || data.message || "API request failed");
     }
 
@@ -83,7 +79,6 @@ export const api = {
         body: JSON.stringify(data),
       }),
     
-    // আপডেট মেথডটি যোগ করা হয়েছে (PATCH)
     update: (id: string, data: any) =>
       fetcher(`/medicines/${id}`, {
         method: "PATCH",
@@ -107,7 +102,8 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    getUserOrders: () => fetcher("/orders/user"),
+    // ✅ FIXED: এখন এটি userId গ্রহণ করবে এবং ডাইনামিক URL তৈরি করবে
+    getUserOrders: (userId: string) => fetcher(`/orders/user/${userId}`),
 
     getSellerOrders: () => fetcher("/orders/seller"),
   },
