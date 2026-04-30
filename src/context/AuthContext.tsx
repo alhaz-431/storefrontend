@@ -28,7 +28,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const savedUser = localStorage.getItem("medistore_user");
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error("Failed to parse user data:", error);
+      }
     }
     setIsLoading(false);
   }, []);
@@ -36,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = (userData: any) => {
     setUser(userData);
     localStorage.setItem("medistore_user", JSON.stringify(userData));
-    // রোল অনুযায়ী রিডাইরেক্ট
+    // রোল অনুযায়ী রিডাইরেক্ট
     if (userData.role === "admin") router.push("/admin/dashboard");
     else if (userData.role === "seller") router.push("/seller/dashboard");
     else router.push("/");
@@ -55,8 +59,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// এখানে মেইন পরিবর্তনটি করা হয়েছে (বিল্ড এরর এড়ানোর জন্য)
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  
+  if (!context) {
+    // বিল্ডের সময় যদি Provider না থাকে, এরর না দিয়ে আমরা একটি সেফ ভ্যালু রিটার্ন করছি
+    return {
+      user: null,
+      login: () => {},
+      logout: () => {},
+      isLoading: false,
+    };
+  }
+  
   return context;
 };

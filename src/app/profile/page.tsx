@@ -1,6 +1,7 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
+// সঠিক পাথটি এখানে বসিয়েছি:
+import ProtectedRoute from "@/components/protectedRoute";
 import { User, Mail, Shield, Calendar } from "lucide-react";
 
 export default function ProfilePage() {
@@ -27,14 +28,14 @@ export default function ProfilePage() {
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
                       <User size={12} /> Full Name
                     </p>
-                    <p className="text-xl font-bold text-white uppercase italic">{user?.name}</p>
+                    <p className="text-xl font-bold text-white uppercase italic">{user?.name || "N/A"}</p>
                   </div>
 
                   <div className="space-y-1">
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
                       <Mail size={12} /> Email Address
                     </p>
-                    <p className="text-xl font-bold text-white">{user?.email}</p>
+                    <p className="text-xl font-bold text-white">{user?.email || "N/A"}</p>
                   </div>
 
                   <div className="space-y-1">
@@ -42,7 +43,7 @@ export default function ProfilePage() {
                       <Shield size={12} /> Account Role
                     </p>
                     <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-[10px] font-black uppercase tracking-tighter border border-emerald-500/20">
-                      {user?.role}
+                      {user?.role || "User"}
                     </span>
                   </div>
 
@@ -70,3 +71,5 @@ export default function ProfilePage() {
     </ProtectedRoute>
   );
 }
+
+
