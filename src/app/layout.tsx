@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { AuthProvider } from "@/context/AuthContext";
-import { CartProvider } from "@/context/CartContext";
-import { Toaster } from "react-hot-toast"; // ১. টোস্টার ইম্পোর্ট করুন
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "MediStore - Your Online Pharmacy",
-  description: "Get genuine medicines delivered fast.",
+  title: "MediStore | Trusted Online Pharmacy",
+  description: "Get your medicines delivered at your doorstep.",
 };
 
 export default function RootLayout({
@@ -18,29 +18,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased flex flex-col min-h-screen bg-[#040610] text-slate-300">
-        {/* ২. Toaster বসানো হলো যা পুরো অ্যাপে মেসেজ দেখাবে */}
-        <Toaster 
-          position="top-center" 
-          reverseOrder={false} 
-          toastOptions={{
-            style: {
-              background: '#111827',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.1)'
-            },
-          }}
-        />
-        
-        <AuthProvider>
-          <CartProvider>
-            <Navbar />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-          </CartProvider>
-        </AuthProvider>
+      <body className={inter.className}>
+        <Navbar />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );
