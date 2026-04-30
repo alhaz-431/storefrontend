@@ -1,5 +1,5 @@
 "use client";
-import ProtectedRoute from "@/components/protectedRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
 // সঠিক পাথটি এখানে বসিয়েছি:
 
