@@ -13,7 +13,21 @@ export default function OrdersPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await api.orders.getUserOrders();
+        // ১. LocalStorage থেকে ইউজার ডাটা নেওয়া
+        const userData = localStorage.getItem("user"); 
+        
+        if (!userData) {
+          console.error("User not logged in");
+          setLoading(false);
+          return;
+        }
+
+        const user = JSON.parse(userData);
+        const userId = user.id; // নিশ্চিত করুন যে আপনার ইউজার অবজেক্টে 'id' প্রপার্টি আছে
+
+        // ২. ID সহ API কল করা (এই আর্গুমেন্টটাই মিসিং ছিল)
+        const response = await api.orders.getUserOrders(userId);
+        
         setOrders(response.data || []);
       } catch (error) {
         console.error("Order fetch failed", error);
@@ -21,6 +35,7 @@ export default function OrdersPage() {
         setLoading(false);
       }
     };
+    
     fetchOrders();
   }, []);
 
