@@ -1,7 +1,8 @@
 "use client";
+import ProtectedRoute from "@/components/protectedRoute";
 import { useAuth } from "@/context/AuthContext";
 // সঠিক পাথটি এখানে বসিয়েছি:
-import ProtectedRoute from "@/components/protectedRoute";
+
 import { User, Mail, Shield, Calendar } from "lucide-react";
 
 export default function ProfilePage() {
