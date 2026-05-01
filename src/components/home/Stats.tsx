@@ -24,3 +24,5 @@ export default function Stats({ stats }: any) {
     </section>
   );
 }
+
+
