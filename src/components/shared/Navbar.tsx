@@ -22,25 +22,23 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0);
   const router = useRouter();
 
-  // ✅ Auth + Cart check (realtime)
+  // ✅ auth + cart
   useEffect(() => {
     const checkData = () => {
-      if (typeof window !== "undefined") {
-        const token = localStorage.getItem("token");
-        const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
+      const token = localStorage.getItem("token");
+      const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
 
-        setIsLoggedIn(!!token);
-        setCartCount(cart.length);
-      }
+      setIsLoggedIn(!!token);
+      setCartCount(cart.length);
     };
 
     checkData();
-
     window.addEventListener("storage", checkData);
+
     return () => window.removeEventListener("storage", checkData);
   }, []);
 
-  // ✅ Logout
+  // logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("medistore_user");
@@ -49,47 +47,56 @@ export default function Navbar() {
     router.push("/");
   };
 
-  // ✅ NavLinks (Auth aware)
+  // dashboard redirect
+  const handleDashboard = () => {
+    const user = JSON.parse(localStorage.getItem("medistore_user") || "{}");
+    const role = (user?.role || "").toUpperCase();
+
+    if (role === "ADMIN") router.push("/admin/dashboard");
+    else if (role === "SELLER") router.push("/seller/dashboard");
+    else router.push("/customer/dashboard");
+  };
+
   const navLinks = [
-    { name: "Home", href: "/", icon: <Home size={16} /> },
-    { name: "Shop", href: "/shop", icon: <Store size={16} /> },
-    { name: "Categories", href: "/categories", icon: <Layers3 size={16} /> },
-    ...(isLoggedIn
-      ? [
-          {
-            name: "Dashboard",
-            href: "/dashboard",
-            icon: <LayoutDashboard size={16} />,
-          },
-        ]
-      : []),
+    { name: "Home", href: "/", icon: <Home size={18} /> },
+    { name: "Shop", href: "/shop", icon: <Store size={18} /> },
+    { name: "Categories", href: "/categories", icon: <Layers3 size={18} /> },
   ];
 
   return (
     <nav className="sticky top-0 w-full bg-[#02040a]/90 backdrop-blur-md border-b border-white/10 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 text-2xl font-black italic text-white">
-          <Pill className="text-emerald-500" size={28} />
+        <Link href="/" className="flex items-center gap-2 text-xl sm:text-2xl font-black italic text-white">
+          <Pill className="text-emerald-500" size={26} />
           MEDI<span className="text-emerald-500">STORE</span>
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6 lg:gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              className="flex items-center gap-2 text-xs font-bold uppercase text-slate-300 hover:text-emerald-500 transition-colors"
+              className="flex items-center gap-2 text-xs font-bold uppercase text-slate-300 hover:text-emerald-500 transition"
             >
               {link.icon} {link.name}
             </Link>
           ))}
+
+          {isLoggedIn && (
+            <button
+              onClick={handleDashboard}
+              className="flex items-center gap-2 text-xs font-bold uppercase text-slate-300 hover:text-emerald-500"
+            >
+              <LayoutDashboard size={16} /> Dashboard
+            </button>
+          )}
         </div>
 
-        {/* Desktop Right */}
-        <div className="hidden md:flex items-center gap-6">
+        {/* Right */}
+        <div className="hidden md:flex items-center gap-5">
 
           {/* Cart */}
           <Link href="/cart" className="relative text-white hover:text-emerald-500">
@@ -116,7 +123,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/register"
-                className="bg-white text-black px-4 py-2 rounded-lg text-xs font-black hover:bg-emerald-500 hover:text-white transition-all"
+                className="bg-white text-black px-4 py-2 rounded-lg text-xs font-black hover:bg-emerald-500 hover:text-white transition"
               >
                 Register
               </Link>
@@ -124,8 +131,8 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile */}
-        <div className="md:hidden flex items-center gap-4 text-white">
+        {/* Mobile Button */}
+        <div className="md:hidden flex items-center gap-3 text-white">
 
           {/* Cart */}
           <Link href="/cart" className="relative">
@@ -137,48 +144,60 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* Menu Button */}
+          {/* Menu */}
           <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="md:hidden bg-[#02040a] border-t border-white/10 p-6 flex flex-col gap-6"
+            exit={{ opacity: 0, y: -10 }}
+            className="md:hidden bg-[#02040a] border-t border-white/10 px-5 py-6 flex flex-col gap-5"
           >
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-3 text-sm font-bold uppercase text-white"
+                className="flex items-center gap-3 text-sm font-bold uppercase text-white py-2"
               >
                 {link.icon} {link.name}
               </Link>
             ))}
+
+            {isLoggedIn && (
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleDashboard();
+                }}
+                className="flex items-center gap-3 text-sm font-bold uppercase text-white py-2"
+              >
+                <LayoutDashboard size={18} /> Dashboard
+              </button>
+            )}
 
             <div className="h-px bg-white/10" />
 
             {isLoggedIn ? (
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 text-sm font-bold uppercase text-red-500"
+                className="flex items-center gap-3 text-sm font-bold uppercase text-red-500 py-2"
               >
                 <LogOut size={18} /> Logout
               </button>
             ) : (
-              <>
+              <div className="flex flex-col gap-3">
                 <Link
                   href="/login"
                   onClick={() => setIsMenuOpen(false)}
-                  className="text-sm font-bold uppercase text-white"
+                  className="text-sm font-bold uppercase text-white py-2"
                 >
                   Login
                 </Link>
@@ -189,7 +208,7 @@ export default function Navbar() {
                 >
                   Register
                 </Link>
-              </>
+              </div>
             )}
           </motion.div>
         )}
