@@ -1,144 +1,92 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  ShoppingBag,
-  Package,
-  User,
-  Home,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ShoppingBag, ShoppingCart, User, Package } from "lucide-react";
+import { motion } from "framer-motion";
 
-const navItems = [
-  { name: "Home", href: "/customer", icon: Home },
-  { name: "Cart", href: "/customer/cart", icon: ShoppingBag },
-  { name: "Orders", href: "/customer/orders", icon: Package },
-  { name: "Profile", href: "/customer/profile", icon: User },
-];
-
-export default function CustomerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
+export default function CustomerDashboard() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [open, setOpen] = useState(false);
 
-  const logout = () => {
-    localStorage.clear();
-    router.push("/login");
-  };
+  useEffect(() => {
+    const userData = localStorage.getItem("medistore_user");
+    if (!userData) {
+      router.replace("/login");
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.role !== "CUSTOMER") {
+        router.replace("/");
+        return;
+      }
+      setUser(parsedUser);
+      setLoading(false);
+    } catch (error) {
+      localStorage.removeItem("medistore_user");
+      router.replace("/login");
+    }
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full text-emerald-500 font-bold">
+        Loading MediStore...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#02040a] text-white flex">
+    <div className="p-8 lg:p-12">
+      {/* ওয়েলকাম সেকশন */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-4xl font-black mb-3">
+          Welcome back, <span className="text-emerald-500">{user?.name}</span> 👋
+        </h1>
+        <p className="text-slate-500 text-lg mb-10">Manage your health and orders from one place.</p>
+      </motion.div>
 
-      {/* SIDEBAR DESKTOP */}
-      <aside className="hidden lg:flex w-72 flex-col border-r border-white/10 p-6 sticky top-0 h-screen">
-
-        <Link href="/customer" className="mb-10">
-          <h1 className="text-2xl font-black italic">
-            Medi<span className="text-emerald-500">Store</span>
-          </h1>
-          <p className="text-[10px] text-slate-500 tracking-widest">
-            CUSTOMER DASHBOARD
-          </p>
-        </Link>
-
-        <nav className="flex-1 space-y-2">
-          {navItems.map((item) => {
-            const active = pathname === item.href;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition ${
-                  active
-                    ? "bg-emerald-600 text-white"
-                    : "text-slate-500 hover:bg-white/5"
-                }`}
-              >
-                <item.icon size={18} />
-                <span className="text-xs font-bold uppercase tracking-widest">
-                  {item.name}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <button
-          onClick={logout}
-          className="flex items-center gap-3 text-red-500 text-xs font-bold mt-auto hover:bg-red-500/10 p-3 rounded-xl"
+      {/* কার্ড গ্রিড - অ্যানিমেশনসহ */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Card 1 */}
+        <motion.div 
+          whileHover={{ scale: 1.03 }}
+          className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500/50 transition cursor-pointer"
         >
-          <LogOut size={18} /> Logout
-        </button>
-      </aside>
+          <div className="text-emerald-500 mb-4"><Package size={28} /></div>
+          <h2 className="text-xl font-bold">My Orders</h2>
+          <p className="text-slate-400 mt-2 text-sm">Track and view your medicine orders.</p>
+        </motion.div>
 
-      {/* MAIN AREA */}
-      <main className="flex-1 flex flex-col">
+        {/* Card 2 */}
+        <motion.div 
+          whileHover={{ scale: 1.03 }}
+          className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-blue-500/50 transition cursor-pointer"
+        >
+          <div className="text-blue-500 mb-4"><ShoppingCart size={28} /></div>
+          <h2 className="text-xl font-bold">Shopping Cart</h2>
+          <p className="text-slate-400 mt-2 text-sm">Check items you've added to buy.</p>
+        </motion.div>
 
-        {/* MOBILE HEADER */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10">
-          <h1 className="font-black italic">
-            Medi<span className="text-emerald-500">Store</span>
-          </h1>
+        {/* Card 3 */}
+        <motion.div 
+          whileHover={{ scale: 1.03 }}
+          className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-purple-500/50 transition cursor-pointer"
+        >
+          <div className="text-purple-500 mb-4"><User size={28} /></div>
+          <h2 className="text-xl font-bold">My Profile</h2>
+          <p className="text-slate-400 mt-2 text-sm">Update your address and info.</p>
+        </motion.div>
 
-          <button onClick={() => setOpen(true)}>
-            <Menu />
-          </button>
-        </div>
-
-        {/* PAGE ANIMATION WRAPPER */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {/* MOBILE SIDEBAR */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            className="fixed inset-0 bg-[#02040a] z-50 p-6 lg:hidden"
-          >
-            <button onClick={() => setOpen(false)} className="mb-8">
-              <X />
-            </button>
-
-            <nav className="space-y-6">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-4 text-lg font-bold text-slate-400"
-                >
-                  <item.icon />
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
