@@ -1,57 +1,41 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { ShoppingBag, Package, User } from "lucide-react";
+import Link from "next/link";
 
-export default function CustomerDashboard() {
+export default function CustomerDashboardPage() {
   return (
-    <div className="p-6 lg:p-10">
-      {/* শুধুমাত্র মেইন কন্টেন্টের হেডার */}
-      <h1 className="text-3xl font-black italic text-white">
-        Welcome to <span className="text-emerald-500">MediStore</span>
+    <div className="p-8">
+      {/* শুধু মেইন হেডিং এবং কার্ড */}
+      <h1 className="text-3xl font-bold mb-8 text-white">
+        Welcome back, <span className="text-emerald-500">babli</span> 👋
       </h1>
 
-      <p className="text-slate-500 text-sm mt-2">
-        Customer Dashboard Overview
-      </p>
-
-      {/* কন্টেন্টের কার্ডগুলো - এগুলো লেআউটের সাইডবারের পাশে দেখাবে */}
-      <div className="grid md:grid-cols-3 gap-6 mt-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Link href="/customer/orders">
+           <div className="bg-[#111] p-6 rounded-xl border border-white/10 hover:border-emerald-500 transition">
+             <ShoppingBag className="text-emerald-500 mb-2" />
+             <h2 className="text-lg font-semibold text-white">My Orders</h2>
+             <p className="text-slate-400 mt-2 text-sm">Track and view your medicine orders.</p>
+           </div>
+        </Link>
         
         <Link href="/customer/cart">
-          <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500 transition cursor-pointer"
-          >
-            <ShoppingBag className="text-emerald-500" />
-            <h2 className="font-bold mt-4 text-white">Cart</h2>
-            <p className="text-sm text-slate-400">View your selected items</p>
-          </motion.div>
-        </Link>
-
-        <Link href="/customer/orders">
-          <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500 transition cursor-pointer"
-          >
-            <Package className="text-emerald-500" />
-            <h2 className="font-bold mt-4 text-white">Orders</h2>
-            <p className="text-sm text-slate-400">Track your recent orders</p>
-          </motion.div>
+           <div className="bg-[#111] p-6 rounded-xl border border-white/10 hover:border-emerald-500 transition">
+             <Package className="text-emerald-500 mb-2" />
+             <h2 className="text-lg font-semibold text-white">Shopping Cart</h2>
+             <p className="text-slate-400 mt-2 text-sm">Check items you've added.</p>
+           </div>
         </Link>
 
         <Link href="/customer/profile">
-          <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500 transition cursor-pointer"
-          >
-            <User className="text-emerald-500" />
-            <h2 className="font-bold mt-4 text-white">Profile</h2>
-            <p className="text-sm text-slate-400">Update your account info</p>
-          </motion.div>
+           <div className="bg-[#111] p-6 rounded-xl border border-white/10 hover:border-emerald-500 transition">
+             <User className="text-emerald-500 mb-2" />
+             <h2 className="text-lg font-semibold text-white">My Profile</h2>
+             <p className="text-slate-400 mt-2 text-sm">Update your info.</p>
+           </div>
         </Link>
-
       </div>
     </div>
   );
