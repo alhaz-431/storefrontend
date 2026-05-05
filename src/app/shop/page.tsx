@@ -19,22 +19,28 @@ export default function ShopPage() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+useEffect(() => {
+  const fetchMeds = async () => {
+    try {
+      const res = await api.medicines.getAll();
+      
+      // ✅ এখানে কনসোল লগ যোগ করা হয়েছে
+      console.log("DEBUG_API_RESPONSE:", res);
+      
+      // এই লগটি দেখে আমরা সিদ্ধান্ত নেব ডেটা কোথায় আছে
+      // যদি কনসোলে দেখেন সরাসরি অ্যারে [{}, {}], তবে সেট করবেন 'res'
+      // আর যদি দেখেন {data: [{}, {}]}, তবে সেট করবেন 'res.data'
+      setMedicines(res.data || res || []);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      toast.error("Failed to load medicines!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => {
-    const fetchMeds = async () => {
-      try {
-        const res = await api.medicines.getAll();
-        setMedicines(res.data || []);
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load medicines!");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMeds();
-  }, []);
+  fetchMeds();
+}, []);
 
   // ✅ safer filter (no crash)
   const filteredMeds = medicines.filter((m) =>
