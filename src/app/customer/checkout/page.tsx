@@ -81,7 +81,7 @@ export default function CheckoutPage() {
           <h2 className="font-bold mb-6 text-xl">Summary</h2>
           
           <div className="flex justify-between mb-4 text-gray-300">
-            <span>Total Amount</span>
+            <span className="text-yellowgreen-300">Total Amount</span>
             <span className="text-emerald-400 font-bold text-xl">৳{total}</span>
           </div>
 

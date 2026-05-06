@@ -2,7 +2,7 @@
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://storemedistore.onrender.com/api";
+  "https://storemedistore.onrender.com/api/v1"; // ✅ FIXED (v1 added)
 
 // 🔑 Token getter
 const getToken = () => {
@@ -42,7 +42,7 @@ const fetcher = async (endpoint: string, options: RequestInit = {}) => {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      throw new Error(data.error || data.message || "API request failed");
+      throw new Error(data.message || "API request failed");
     }
 
     return data;
@@ -55,11 +55,19 @@ const fetcher = async (endpoint: string, options: RequestInit = {}) => {
 // 📦 API Object
 export const api = {
   auth: {
-    login: (data: any) =>
-      fetcher("/auth/login", {
+    login: async (data: any) => {
+      const res = await fetcher("/auth/login", {
         method: "POST",
         body: JSON.stringify(data),
-      }),
+      });
+
+      // ✅ AUTO SAVE TOKEN
+      if (typeof window !== "undefined" && res.token) {
+        localStorage.setItem("token", res.token);
+      }
+
+      return res;
+    },
 
     register: (data: any) =>
       fetcher("/auth/register", {
@@ -96,20 +104,20 @@ export const api = {
   },
 
   orders: {
+    // ✅ CREATE ORDER
     create: (data: any) =>
       fetcher("/orders", {
         method: "POST",
         body: JSON.stringify(data),
       }),
 
-    // 👇 সব user orders
-    getUserOrders: (userId: string) =>
-      fetcher(`/orders/user/${userId}`),
+    // ✅ FIXED: USER OWN ORDERS
+    getMyOrders: () => fetcher("/orders/my"),
 
-    // 👇 seller orders
-    getSellerOrders: () => fetcher("/orders/seller"),
+    // ✅ ADMIN ONLY
+    getAllOrders: () => fetcher("/orders"),
 
-    // ✅ FIX: single order by id (এটাই missing ছিল)
+    // (optional future use)
     getOrderById: (id: string) =>
       fetcher(`/orders/${id}`),
   },
