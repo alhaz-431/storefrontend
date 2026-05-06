@@ -21,11 +21,11 @@ export default function HomePage() {
       try {
         const response = await fetch("https://storemedistore.onrender.com/api/v1/medicines");
         const data = await response.json();
-        setMedicines(data); // API রেসপন্স এখানে সেভ হচ্ছে
+        setMedicines(data); 
       } catch (error) {
         console.error("Error fetching medicines:", error);
       } finally {
-        setLoading(false); // লোডিং শেষ হলে অফ করে দিচ্ছি
+        setLoading(false); 
       }
     };
 
@@ -37,13 +37,13 @@ export default function HomePage() {
       <Hero />
       <Stats stats={{ users: 15000, medicines: 5000, orders: 25000, rating: 4.9 }} />
       
-      {/* মেডিসিন লিস্ট সেকশন */}
-     // page.tsx এর ভেতরে এমনভাবে লিখুন:
+    
+    
 <section className="py-12">
   <div className="container mx-auto px-6">
     <h2 className="text-3xl font-black text-gray-800 mb-8">Popular Medicines</h2>
     
-    {/* এখানে শুধু কম্পোনেন্টটি কল করুন, কোনো প্রপস পাঠানোর দরকার নেই */}
+   
     <MedicineList /> 
     
   </div>
