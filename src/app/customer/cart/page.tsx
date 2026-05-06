@@ -188,7 +188,7 @@ export default function CartPage() {
               </div>
 
               <Link
-                href="/checkout"
+                href="/customer/checkout"
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition flex items-center justify-center gap-2"
               >
                 Proceed to Checkout
