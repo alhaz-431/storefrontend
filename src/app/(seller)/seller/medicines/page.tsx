@@ -21,7 +21,6 @@ interface Medicine {
 }
 
 export default function SellerMedicines() {
-  // ================= STATES =================
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
@@ -42,19 +41,21 @@ export default function SellerMedicines() {
     manufacturer: "Beximco Pharma",
     categoryId: "9a539a21-2b99-422c-8aff-adb1ce801782",
     description: "",
-    image: null as File | null,
+    imageFile: null as File | null,
   };
 
   const [formData, setFormData] = useState(defaultFormData);
 
-  // ================= FETCH DATA =================
+  // ✅ Fetch Medicines
   const fetchMedicines = async () => {
     try {
       const res = await api.medicines.getAll();
-      const data = Array.isArray(res?.data) ? res.data : res || [];
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
       setMedicines(data);
-    } catch {
-      toast.error("ডাটা লোড করতে সমস্যা হয়েছে");
+      return data;
+    } catch (err: any) {
+      toast.error("Failed to load medicines");
+      return [];
     } finally {
       setFetching(false);
     }
@@ -64,16 +65,18 @@ export default function SellerMedicines() {
     fetchMedicines();
   }, []);
 
-  // ================= UTILS =================
+  // ✅ Scroll to Item & Highlight
   const scrollToItem = (id: string) => {
     setTimeout(() => {
       const el = itemRefs.current[id];
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.classList.add("bg-emerald-500/20");
-        setTimeout(() => el.classList.remove("bg-emerald-500/20"), 2000);
+        el.classList.add("bg-emerald-500/20", "ring-1", "ring-emerald-500");
+        setTimeout(() => {
+          el.classList.remove("bg-emerald-500/20", "ring-1", "ring-emerald-500");
+        }, 3000);
       }
-    }, 400);
+    }, 500);
   };
 
   const closeModal = () => {
@@ -83,15 +86,6 @@ export default function SellerMedicines() {
     setFormData(defaultFormData);
   };
 
-  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData({ ...formData, image: file });
-      setPreviewImage(URL.createObjectURL(file));
-    }
-  };
-
-  // ================= ACTIONS =================
   const openView = (med: Medicine) => {
     setSelectedMedicine(med);
     setIsViewOpen(true);
@@ -103,55 +97,76 @@ export default function SellerMedicines() {
       name: med.name,
       price: String(med.price),
       stock: String(med.stock),
-      manufacturer: med.manufacturer || "Beximco Pharma",
+      manufacturer: med.manufacturer || "",
       categoryId: med.category?.id || defaultFormData.categoryId,
       description: med.description || "",
-      image: null,
+      imageFile: null,
     });
-    setPreviewImage(med.image || null);
+    // ইমেজ যদি ব্যাকএন্ড থেকে আসে তবে প্রিভিউ দেখান
+    setPreviewImage(med.image ? `http://localhost:5000/${med.image}` : null);
     setIsModalOpen(true);
   };
 
+  // ✅ Handle Submit (ADD or EDIT)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+    
     setLoading(true);
-    const toastId = toast.loading(editingMedicine ? "Updating..." : "Adding...");
+    const toastId = toast.loading(editingMedicine ? "Updating medicine..." : "Adding medicine...");
 
     try {
+      // ব্যাকএন্ডে ফাইল পাঠানোর জন্য FormData ব্যবহার করতে হবে
       const data = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null) data.append(key, value as any);
-      });
-
-      let res;
-      if (editingMedicine) {
-        res = await api.medicines.update(editingMedicine.id, data);
-        toast.success("সফলভাবে আপডেট হয়েছে", { id: toastId });
-      } else {
-        res = await api.medicines.create(data);
-        toast.success("সফলভাবে যোগ হয়েছে", { id: toastId });
+      data.append("name", formData.name);
+      data.append("price", formData.price);
+      data.append("stock", formData.stock);
+      data.append("manufacturer", formData.manufacturer);
+      data.append("categoryId", formData.categoryId);
+      data.append("description", formData.description);
+      
+      if (formData.imageFile) {
+        data.append("image", formData.imageFile);
       }
 
-      const targetId = res?.data?.id || editingMedicine?.id;
+      let response;
+      let targetId;
+
+      if (editingMedicine) {
+        response = await api.medicines.update(editingMedicine.id, data);
+        targetId = editingMedicine.id;
+        toast.success(`${formData.name} updated successfully!`, { id: toastId });
+      } else {
+        response = await api.medicines.create(data);
+        // ব্যাকএন্ড থেকে আসা নতুন ID বের করা
+        targetId = response?.data?.data?.id || response?.data?.id;
+        toast.success(`${formData.name} added to inventory!`, { id: toastId });
+      }
+
       closeModal();
       await fetchMedicines();
-      if (targetId) scrollToItem(targetId);
-    } catch {
-      toast.error("কিছু একটা ভুল হয়েছে", { id: toastId });
+      
+      if (targetId) {
+        scrollToItem(targetId);
+      }
+
+    } catch (err: any) {
+      console.error("❌ Submit Error:", err);
+      toast.error(err?.response?.data?.error || "Operation failed", { id: toastId });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this medicine?")) return;
+    if (!confirm("Are you sure?")) return;
     const toastId = toast.loading("Deleting...");
     try {
       await api.medicines.delete(id);
       setMedicines(prev => prev.filter(m => m.id !== id));
-      toast.success("ডিলিট সম্পন্ন হয়েছে", { id: toastId });
-    } catch {
-      toast.error("ডিলিট ব্যর্থ হয়েছে", { id: toastId });
+      toast.success("Medicine removed!", { id: toastId });
+    } catch (err: any) {
+      toast.error("Delete failed", { id: toastId });
     }
   };
 
@@ -162,153 +177,165 @@ export default function SellerMedicines() {
   return (
     <div className="p-4 md:p-8 min-h-screen bg-[#02040a] text-white">
       <div className="max-w-6xl mx-auto">
-        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <h1 className="text-2xl font-bold">Inventory Management</h1>
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Medicine Inventory</h1>
+            <p className="text-sm text-gray-400">Manage your stock and pricing</p>
+          </div>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-full md:w-auto bg-emerald-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 font-semibold hover:bg-emerald-700 transition-all active:scale-95"
+            onClick={() => { setEditingMedicine(null); setFormData(defaultFormData); setIsModalOpen(true); }}
+            className="bg-emerald-600 px-6 py-3 rounded-xl flex items-center gap-2 font-semibold hover:bg-emerald-700 transition-all"
           >
             <Plus size={20} /> Add Medicine
           </button>
         </div>
 
-        {/* SEARCH */}
+        {/* Search Bar */}
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
           <input
-            className="w-full p-4 pl-12 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-emerald-500/50 transition-all"
-            placeholder="Search medicine..."
+            className="w-full p-4 pl-12 bg-white/5 border border-white/10 rounded-2xl focus:border-emerald-500 transition outline-none"
+            placeholder="Search by name..."
+            value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* TABLE */}
+        {/* Table Container */}
         <div className="bg-white/5 rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left">
               <thead className="bg-white/5 text-gray-400 text-[11px] uppercase tracking-widest font-bold">
                 <tr>
                   <th className="p-5">Medicine Info</th>
                   <th className="p-5">Price</th>
-                  <th className="p-5">Stock</th>
+                  <th className="p-5">Stock Status</th>
                   <th className="p-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {fetching ? (
-                  <tr>
-                    <td colSpan={4} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-emerald-500" /></td>
+                  <tr><td colSpan={4} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-emerald-500" size={32} /></td></tr>
+                ) : filtered.map(med => (
+                  <tr key={med.id} ref={(el) => { itemRefs.current[med.id] = el; }} className="group transition-all duration-300">
+                    <td className="p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 bg-white/10 rounded-lg overflow-hidden border border-white/5">
+                          {med.image ? (
+                            <img src={`http://localhost:5000/${med.image}`} className="h-full w-full object-cover" alt="" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center"><Package size={18} className="text-gray-600" /></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold">{med.name}</p>
+                          <p className="text-[10px] text-gray-500 uppercase">{med.manufacturer}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-5 font-mono text-emerald-400 font-bold">৳{med.price}</td>
+                    <td className="p-5">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${med.stock < 10 ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                        {med.stock} IN STOCK
+                      </span>
+                    </td>
+                    <td className="p-5 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => openView(med)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition"><Eye size={18}/></button>
+                        <button onClick={() => startEdit(med)} className="p-2 hover:bg-emerald-500/10 rounded-lg text-emerald-400 hover:text-emerald-300 transition"><Edit3 size={18}/></button>
+                        <button onClick={() => handleDelete(med.id)} className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg hover:text-red-300 transition"><Trash2 size={18}/></button>
+                      </div>
+                    </td>
                   </tr>
-                ) : filtered.length > 0 ? (
-                  filtered.map(med => (
-                    <tr
-                      key={med.id}
-                      ref={(el) => { if (el) itemRefs.current[med.id] = el; }}
-                      className="group hover:bg-white/[0.02] transition-colors"
-                    >
-                      <td className="p-5">
-                        <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
-                            {med.image ? <img src={med.image} className="h-full w-full object-cover" /> : <Package size={18} className="text-gray-500" />}
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-200">{med.name}</p>
-                            <p className="text-[10px] text-gray-500 uppercase">{med.manufacturer}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-5 font-mono text-emerald-400">৳{med.price}</td>
-                      <td className="p-5">{med.stock} pcs</td>
-                      <td className="p-5 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => openView(med)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all"><Eye size={18}/></button>
-                          <button onClick={() => startEdit(med)} className="p-2 hover:bg-white/10 rounded-lg text-blue-400 hover:text-blue-300 transition-all"><Edit3 size={18}/></button>
-                          <button onClick={() => handleDelete(med.id)} className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-all"><Trash2 size={18}/></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={4} className="p-10 text-center text-gray-500 font-medium">No medicine found!</td></tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* VIEW MODAL (DETAILS) */}
+      {/* VIEW DETAILS MODAL */}
       <AnimatePresence>
         {isViewOpen && selectedMedicine && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-[#0d111a] border border-white/10 p-6 rounded-3xl w-full max-w-md relative shadow-2xl">
-              <button onClick={() => setIsViewOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X /></button>
-              <div className="h-48 w-full bg-white/5 rounded-2xl mb-4 flex items-center justify-center overflow-hidden">
-                {selectedMedicine.image ? <img src={selectedMedicine.image} className="w-full h-full object-cover" /> : <Package size={48} className="text-white/10" />}
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-[#0d111a] border border-white/10 p-6 rounded-[32px] w-full max-w-md shadow-2xl">
+              <div className="h-48 w-full bg-white/5 rounded-2xl mb-6 overflow-hidden">
+                {selectedMedicine.image ? (
+                  <img src={`http://localhost:5000/${selectedMedicine.image}`} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center"><Package size={48} className="text-white/10" /></div>
+                )}
               </div>
               <h2 className="text-2xl font-bold mb-1">{selectedMedicine.name}</h2>
-              <p className="text-emerald-500 text-sm font-semibold mb-4">{selectedMedicine.manufacturer}</p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                  <p className="text-[10px] text-gray-500 uppercase font-bold">Price</p>
-                  <p className="text-lg font-mono text-emerald-400">৳{selectedMedicine.price}</p>
+              <p className="text-emerald-500 font-medium mb-4">{selectedMedicine.manufacturer}</p>
+              <div className="space-y-4">
+                <div className="flex justify-between p-4 bg-white/5 rounded-xl">
+                  <span className="text-gray-400">Price</span>
+                  <span className="font-bold text-emerald-400">৳{selectedMedicine.price}</span>
                 </div>
-                <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                  <p className="text-[10px] text-gray-500 uppercase font-bold">Stock</p>
-                  <p className="text-lg font-mono">{selectedMedicine.stock} PCS</p>
+                <div className="flex justify-between p-4 bg-white/5 rounded-xl">
+                  <span className="text-gray-400">Available Stock</span>
+                  <span className="font-bold">{selectedMedicine.stock} PCS</span>
                 </div>
+                <p className="text-gray-400 text-sm leading-relaxed italic">"{selectedMedicine.description || "No description provided."}"</p>
+                <button onClick={() => setIsViewOpen(false)} className="w-full bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 py-3 rounded-xl font-bold transition mt-4">Close Details</button>
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed mb-6">{selectedMedicine.description || "No description provided."}</p>
-              <button onClick={() => setIsViewOpen(false)} className="w-full bg-white/5 hover:bg-white/10 py-3 rounded-xl font-bold transition-all">Close</button>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* ADD / EDIT MODAL */}
+      {/* ADD/EDIT FORM MODAL */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} onSubmit={handleSubmit} className="bg-[#0d111a] border border-white/10 p-6 rounded-3xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">{editingMedicine ? "Edit" : "Add"} Medicine</h2>
-                <button type="button" onClick={closeModal} className="text-gray-500 hover:text-white"><X /></button>
-              </div>
-
-              <div className="space-y-4">
-                {/* Image Upload */}
-                <div onClick={() => document.getElementById('file-up')?.click()} className="h-32 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-all overflow-hidden">
-                  {previewImage ? <img src={previewImage} className="h-full w-full object-cover" /> : <div className="text-center"><ImageIcon className="mx-auto text-gray-600 mb-1" /><p className="text-[10px] text-gray-500 font-bold uppercase">Upload Image</p></div>}
-                  <input id="file-up" type="file" hidden onChange={handleImage} accept="image/*" />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Medicine Name</label>
-                  <input required className="w-full p-3 bg-white/5 border border-white/10 rounded-xl focus:border-emerald-500 focus:outline-none transition-all" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Price (৳)</label>
-                    <input required type="number" className="w-full p-3 bg-white/5 border border-white/10 rounded-xl focus:border-emerald-500 focus:outline-none transition-all" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
+            <motion.form initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} onSubmit={handleSubmit} className="bg-[#0d111a] border border-white/10 p-8 rounded-[32px] w-full max-w-lg shadow-2xl">
+              <h2 className="text-2xl font-bold mb-6">{editingMedicine ? "Update" : "Add New"} Medicine</h2>
+              
+              <div className="space-y-5">
+                {/* Image Upload Preview */}
+                <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                  <div className="h-20 w-20 bg-black rounded-lg overflow-hidden flex items-center justify-center border border-white/5">
+                    {previewImage ? <img src={previewImage} className="h-full w-full object-cover" alt="" /> : <ImageIcon className="text-gray-700" />}
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Stock</label>
-                    <input required type="number" className="w-full p-3 bg-white/5 border border-white/10 rounded-xl focus:border-emerald-500 focus:outline-none transition-all" value={formData.stock} onChange={e => setFormData({ ...formData, stock: e.target.value })} />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-tighter">Product Image</p>
+                    <input type="file" accept="image/*" onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if(file) {
+                        setFormData({...formData, imageFile: file});
+                        setPreviewImage(URL.createObjectURL(file));
+                      }
+                    }} className="text-xs text-emerald-500 file:hidden cursor-pointer" />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Description</label>
-                  <textarea className="w-full p-3 bg-white/5 border border-white/10 rounded-xl focus:border-emerald-500 focus:outline-none h-24 resize-none transition-all" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                <div className="grid gap-4">
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Medicine Name</label>
+                    <input required className="w-full p-3 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-emerald-500" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Price (৳)</label>
+                      <input required type="number" step="0.01" className="w-full p-3 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-emerald-500" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Stock Amount</label>
+                      <input required type="number" className="w-full p-3 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-emerald-500" value={formData.stock} onChange={e => setFormData({ ...formData, stock: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Description</label>
+                    <textarea className="w-full p-3 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-emerald-500 h-24 resize-none" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-8">
-                <button type="button" onClick={closeModal} className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl font-bold text-sm transition-all">Cancel</button>
-                <button disabled={loading} className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center">
-                  {loading ? <Loader2 className="animate-spin" size={20} /> : "Save Medicine"}
+              <div className="flex gap-4 mt-8">
+                <button type="button" onClick={closeModal} className="flex-1 bg-white/5 hover:bg-white/10 py-4 rounded-2xl font-bold transition">Cancel</button>
+                <button type="submit" disabled={loading} className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50">
+                  {loading ? <Loader2 className="animate-spin" size={20} /> : (editingMedicine ? "Save Changes" : "Confirm Add")}
                 </button>
               </div>
             </motion.form>
