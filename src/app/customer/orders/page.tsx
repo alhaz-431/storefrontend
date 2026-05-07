@@ -29,20 +29,13 @@ export default function OrdersPage() {
     setLoading(true);
 
     try {
-      // ✅ CUSTOMER SAFE USER FETCH
-      const user = JSON.parse(localStorage.getItem("medistore_user") || "{}");
+      // ✅ ফিক্সড: টাইপ এরর দূর করতে 'getUserOrders' এর বদলে 'getMyOrders' ব্যবহার করা হয়েছে
+      const res = await api.orders.getMyOrders();
 
-      if (!user?.id) {
-        toast.error("Please login first");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ ONLY USER ORDERS (NOT ADMIN)
-      const res = await api.orders.getUserOrders(user.id);
-
-      setOrders(res.data || []);
+      // API রেসপন্স ফরম্যাট অনুযায়ী ডাটা সেট করা
+      setOrders(res.data || res || []);
     } catch (error: any) {
+      console.error("Order fetching error:", error);
       toast.error(error?.response?.data?.error || "Failed to load orders");
     } finally {
       setLoading(false);
@@ -75,98 +68,108 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#02040a] flex items-center justify-center text-white">
-        Loading orders...
+      <div className="min-h-screen bg-[#02040a] flex items-center justify-center text-white italic font-black uppercase tracking-widest">
+        Loading <span className="text-emerald-500 ml-2 text-xl">Orders...</span>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#02040a] text-white p-6 lg:p-10">
-
       {/* HEADER */}
-      <h1 className="text-3xl font-black mb-8">
-        My <span className="text-emerald-500">Orders</span>
-      </h1>
+      <div className="mb-10">
+        <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white">
+          My <span className="text-emerald-500">Orders</span>
+        </h1>
+        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-2">
+          Track and manage your recent purchases
+        </p>
+      </div>
 
       {/* EMPTY STATE */}
       {orders.length === 0 ? (
-        <div className="text-center py-20 text-slate-400">
-          No orders found
+        <div className="bg-white/[0.02] border border-white/5 rounded-[40px] p-20 text-center text-slate-500 uppercase font-black text-[10px] tracking-[0.3em]">
+          No orders found yet
         </div>
       ) : (
-        <div className="space-y-5">
-
+        <div className="space-y-6">
           {orders.map((order, index) => (
             <motion.div
               key={order.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-emerald-500/30 transition"
+              className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 hover:border-emerald-500/30 transition-all group"
             >
-
-              {/* TOP */}
-              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-
+              {/* TOP SECTION */}
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                 <div>
-                  <p className="font-bold text-white">
-                    Order #{order.orderNumber}
+                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">
+                    Order Reference
                   </p>
-
-                  <p className="text-xs text-slate-400 flex items-center gap-1">
-                    <Calendar size={14} />
-                    {formatDate(order.createdAt)}
+                  <p className="font-black text-lg text-white italic tracking-tight">
+                    #{order.orderNumber}
                   </p>
+                  <div className="flex items-center gap-2 text-slate-400 mt-2">
+                    <Calendar size={14} className="text-emerald-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">
+                      {formatDate(order.createdAt)}
+                    </span>
+                  </div>
                 </div>
 
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold border ${statusStyle(
+                <div
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] border ${statusStyle(
                     order.status
                   )}`}
                 >
                   {order.status}
-                </span>
-
+                </div>
               </div>
 
-              {/* INFO GRID */}
-              <div className="grid md:grid-cols-3 gap-4 text-sm mb-4">
-
-                <div>
-                  <p className="text-slate-400 text-xs">Address</p>
-                  <p>{order.shippingAddress}</p>
+              {/* DETAILS GRID */}
+              <div className="grid md:grid-cols-3 gap-6 border-t border-white/5 pt-6 mb-6">
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest">
+                    Shipping Address
+                  </p>
+                  <p className="text-xs font-bold text-slate-300 leading-relaxed">
+                    <MapPin size={12} className="inline mr-1 text-emerald-500" />
+                    {order.shippingAddress}
+                  </p>
                 </div>
 
-                <div>
-                  <p className="text-slate-400 text-xs">Total</p>
-                  <p className="text-emerald-400 font-bold">
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest">
+                    Total Amount
+                  </p>
+                  <p className="text-xl font-black text-emerald-500 italic">
                     ৳{order.totalPrice}
                   </p>
                 </div>
 
-                <div>
-                  <p className="text-slate-400 text-xs">Items</p>
-                  <p>{order.items?.length || 0}</p>
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest">
+                    Items Purchased
+                  </p>
+                  <p className="text-xs font-bold text-white uppercase tracking-widest">
+                    {order.items?.length || 0} Products
+                  </p>
                 </div>
-
               </div>
 
-              {/* VIEW DETAILS */}
+              {/* FOOTER ACTION */}
               <Link
                 href={`/customer/orders/${order.id}`}
-                className="inline-flex items-center gap-2 text-emerald-400 text-sm hover:underline"
+                className="inline-flex items-center gap-3 bg-white/5 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all group-hover:shadow-lg group-hover:shadow-emerald-900/20"
               >
-                <Eye size={14} />
+                <Eye size={16} />
                 View Details
               </Link>
-
             </motion.div>
           ))}
-
         </div>
       )}
-
     </div>
   );
 }
