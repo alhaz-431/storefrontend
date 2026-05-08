@@ -1,195 +1,202 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, CreditCard, ShoppingBag, Loader2, ArrowRight } from "lucide-react";
-import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { MapPin, Phone, User, ShoppingBag, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 export default function CheckoutPage() {
-  const [cart, setCart] = useState<any[]>([]);
-  const [shippingAddress, setShippingAddress] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [cart, setCart] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingName, setShippingName] = useState("");
+  const [shippingPhone, setShippingPhone] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("medistore_cart");
-    if (saved) {
-      setCart(JSON.parse(saved));
+    const savedCart = localStorage.getItem("medistore_cart");
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+    
+    // ইউজার ডাটা থেকে নাম ও ফোন অটো-ফিল করা
+    const userStr = localStorage.getItem("medistore_user");
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setShippingName(user.name || "");
+      setShippingPhone(user.phone || "");
     }
   }, []);
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const handlePlaceOrder = async () => {
-    // ১. ইউজার চেক
-    const userStr = localStorage.getItem("medistore_user");
-    if (!userStr) {
-      toast.error("অনুগ্রহ করে আগে লগইন করুন");
-      router.push("/login");
-      return;
-    }
-    const user = JSON.parse(userStr);
-
-    // ২. অ্যাড্রেস ভ্যালিডেশন
-    if (!shippingAddress.trim()) {
-      toast.error("আপনার ডেলিভারি ঠিকানাটি লিখুন");
+    // ভ্যালিডেশন
+    if (!shippingAddress || !shippingName || !shippingPhone) {
+      toast.error("সবগুলো তথ্য সঠিকভাবে পূরণ করুন");
       return;
     }
 
-    // ৩. কার্ট চেক
     if (cart.length === 0) {
-      toast.error("আপনার কার্টটি খালি!");
+      toast.error("আপনার কার্ট খালি");
       return;
     }
 
     setLoading(true);
-    const toastId = toast.loading("অর্ডার প্রসেস হচ্ছে...");
+    const toastId = toast.loading("অর্ডার প্রসেস হচ্ছে, দয়া করে অপেক্ষা করুন...");
 
     try {
-      const items = cart.map((i) => ({
-        medicineId: i.id, // আপনার API অনুযায়ী id বা medicineId নিশ্চিত করুন
-        quantity: i.quantity 
-      }));
+      // ✅ আপনার ব্যাকএন্ড কন্ট্রোলার অনুযায়ী ডাটা স্ট্রাকচার
+      const orderData = {
+        items: cart.map((item) => ({
+          medicineId: item.id || item.medicineId,
+          quantity: item.quantity,
+          price: item.price // ব্যাকএন্ডে Prisma-র জন্য এটি জরুরি
+        })),
+        shippingAddress,
+        shippingName,
+        shippingPhone
+      };
 
-      await api.orders.create({ 
-        userId: user.id, 
-        items, 
-        shippingAddress 
-      });
+      const res = await api.orders.create(orderData);
 
-      // ✅ সফল হলে কার্ট ক্লিয়ার করা
-      localStorage.removeItem("medistore_cart");
-      
-      toast.success("অর্ডারটি সফলভাবে সম্পন্ন হয়েছে! 🎉", { id: toastId });
+      if (res) {
+        // ১. কার্ট ক্লিয়ার
+        localStorage.removeItem("medistore_cart");
+        setCart([]);
 
-      // ✅ ১.৫ সেকেন্ড পর অর্ডার পেজে পাঠানো
-      setTimeout(() => {
-        router.push("/customer/orders");
-      }, 1500);
+        // ২. সাকসেস মেসেজ
+        toast.success("অর্ডার সফলভাবে সম্পন্ন হয়েছে! 🎉", { id: toastId });
 
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "অর্ডার করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।", { id: toastId });
+        // ৩. সরাসরি রিডাইরেক্ট (১৫০০ মিলি-সেকেন্ড পর)
+        setTimeout(() => {
+          window.location.href = "/customer/orders";
+        }, 1500);
+      }
+    } catch (error: any) {
+      console.error("Order Error:", error);
+      const message = error.response?.data?.message || "অর্ডার প্লেস করতে সমস্যা হয়েছে";
+      toast.error(message, { id: toastId });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    // Deep Navy Green Gradient Background
-    <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#062d24,_#020d0a)] text-white p-6 lg:p-12">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#020d0a] text-white p-6 lg:p-12">
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12">
         
-        {/* Header */}
-        <header className="mb-10">
-          <motion.h1 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200"
-          >
-            Final Checkout 💳
-          </motion.h1>
-          <p className="text-emerald-500/60 font-medium">আপনার অর্ডারটি শেষ করতে নিচের তথ্যগুলো নিশ্চিত করুন</p>
-        </header>
+        {/* বাম পাশ: শিপিং ফর্ম */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-8"
+        >
+          <div>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter">
+              Checkout <span className="text-emerald-500">Details</span>
+            </h1>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">
+              Please provide your delivery information
+            </p>
+          </div>
 
-        <div className="grid lg:grid-cols-3 gap-10">
-          
-          {/* Main Info Side */}
-          <div className="lg:col-span-2 space-y-8">
-            
-            {/* Shipping Card */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-[32px] shadow-2xl"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500">
-                  <MapPin size={24} />
-                </div>
-                <h2 className="font-bold text-xl">Shipping Address</h2>
+          <div className="space-y-4 bg-white/[0.02] border border-white/5 p-8 rounded-[35px]">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-emerald-500/50 ml-2">Receiver Name</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
+                <input 
+                  type="text"
+                  value={shippingName}
+                  onChange={(e) => setShippingName(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:border-emerald-500 outline-none transition-all"
+                  placeholder="Enter receiver name"
+                />
               </div>
-              
-              <textarea
-                className="w-full p-5 bg-black/40 border border-white/5 rounded-2xl focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all h-40 resize-none text-gray-200"
-                placeholder="আপনার পূর্ণাঙ্গ ঠিকানা লিখুন (বাসা নং, রোড, এলাকা...)"
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-              />
-            </motion.div>
+            </div>
 
-            {/* Payment Method Card */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-[32px] flex items-center justify-between group cursor-default"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400">
-                  <CreditCard size={24} />
-                </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-emerald-500/50 ml-2">Phone Number</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
+                <input 
+                  type="text"
+                  value={shippingPhone}
+                  onChange={(e) => setShippingPhone(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:border-emerald-500 outline-none transition-all"
+                  placeholder="Enter phone number"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-emerald-500/50 ml-2">Delivery Address</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-4 text-emerald-500" size={18} />
+                <textarea 
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:border-emerald-500 outline-none transition-all min-h-[120px]"
+                  placeholder="Full address (House, Road, Area...)"
+                />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ডান পাশ: অর্ডার সামারি */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[40px] p-8 h-fit lg:sticky lg:top-10"
+        >
+          <h2 className="text-xl font-black italic uppercase mb-6 flex items-center gap-3">
+            <ShoppingBag className="text-emerald-500" /> Order Summary
+          </h2>
+
+          <div className="max-h-[300px] overflow-y-auto space-y-4 mb-8 pr-2">
+            {cart.map((item) => (
+              <div key={item.id} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
                 <div>
-                  <p className="font-bold text-lg">Cash on Delivery (COD)</p>
-                  <p className="text-sm text-gray-500">পণ্য হাতে পেয়ে টাকা পরিশোধ করুন</p>
+                  <p className="font-bold text-sm">{item.name}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase">Qty: {item.quantity} x ৳{item.price}</p>
                 </div>
+                <p className="font-black text-emerald-500 italic">৳{item.price * item.quantity}</p>
               </div>
-              <div className="h-6 w-6 rounded-full border-2 border-emerald-500 flex items-center justify-center p-1">
-                <div className="h-full w-full bg-emerald-500 rounded-full"></div>
-              </div>
-            </motion.div>
+            ))}
           </div>
 
-          {/* Summary Sidebar */}
-          <div className="lg:sticky lg:top-10 h-fit">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-gradient-to-b from-white/[0.08] to-transparent backdrop-blur-2xl border border-white/10 p-8 rounded-[40px] shadow-3xl"
-            >
-              <h2 className="font-bold mb-8 text-2xl flex items-center gap-3">
-                <ShoppingBag className="text-emerald-500" size={24} /> Summary
-              </h2>
-              
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between text-gray-400">
-                  <span>Subtotal</span>
-                  <span className="text-gray-200">৳{total}</span>
-                </div>
-                <div className="flex justify-between text-gray-400">
-                  <span>Delivery Fee</span>
-                  <span className="text-emerald-500 font-bold uppercase text-[10px] tracking-widest bg-emerald-500/10 px-2 py-1 rounded">Free</span>
-                </div>
-                <div className="h-[1px] bg-white/10 my-4"></div>
-                <div className="flex justify-between items-end">
-                  <span className="text-gray-100 font-medium">Total Payable</span>
-                  <span className="text-3xl font-black text-emerald-400">৳{total}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handlePlaceOrder}
-                disabled={loading}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 py-5 rounded-[20px] font-black text-white shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
-              >
-                {loading ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <>
-                    Confirm Order <ArrowRight size={20} />
-                  </>
-                )}
-              </button>
-              
-              <p className="text-[10px] text-center text-gray-500 mt-6 uppercase tracking-widest">
-                Secure 128-bit SSL Encrypted Payment
-              </p>
-            </motion.div>
+          <div className="border-t border-white/10 pt-6 space-y-3">
+            <div className="flex justify-between text-slate-400 font-bold text-sm">
+              <span>Subtotal</span>
+              <span>৳{totalAmount}</span>
+            </div>
+            <div className="flex justify-between text-slate-400 font-bold text-sm">
+              <span>Delivery Fee</span>
+              <span className="text-emerald-500 uppercase text-[10px]">Free</span>
+            </div>
+            <div className="flex justify-between items-end pt-4">
+              <span className="text-xs font-black uppercase tracking-widest">Total Amount</span>
+              <span className="text-4xl font-black text-emerald-500 italic">৳{totalAmount}</span>
+            </div>
           </div>
 
-        </div>
+          <button
+            onClick={handlePlaceOrder}
+            disabled={loading}
+            className={`w-full mt-10 py-5 rounded-[25px] font-black uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3 transition-all ${
+              loading 
+                ? "bg-slate-800 text-slate-500 cursor-not-allowed" 
+                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl shadow-emerald-600/20 active:scale-95"
+            }`}
+          >
+            {loading ? "Processing..." : "Place Order Now"} <ArrowRight size={20} />
+          </button>
+        </motion.div>
+
       </div>
     </div>
   );
