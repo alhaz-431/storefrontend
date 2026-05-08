@@ -111,21 +111,29 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    // ✅ FIXED: USER OWN ORDERS
+    // ✅ USER OWN ORDERS
     getMyOrders: () => fetcher("/orders/my"),
 
     // ✅ ADMIN ONLY
     getAllOrders: () => fetcher("/orders"),
 
-    // (optional future use)
+    // ✅ GET SINGLE ORDER DETAILS
     getOrderById: (id: string) =>
       fetcher(`/orders/${id}`),
+
+    // ✅ UPDATE ORDER STATUS (For Cancel or Admin Update)
+    updateStatus: (id: string, status: string) =>
+      fetcher(`/orders/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }),
   },
 
   admin: {
     getAllUsers: () => fetcher("/admin/users"),
 
-    updateStatus: (id: string, status: string) =>
+    // Admin Specific status update if endpoint is different
+    updateOrderStatus: (id: string, status: string) =>
       fetcher(`/admin/orders/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
