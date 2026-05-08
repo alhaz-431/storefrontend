@@ -25,7 +25,7 @@ export default function SellerOrders() {
 
   const updateStatus = async (orderId: string, status: string) => {
     try {
-      await api.admin.updateStatus(orderId, status);
+    await api.admin.updateOrderStatus(orderId, status);
       toast.success(`অর্ডার স্ট্যাটাস এখন ${status}`);
       fetchOrders();
     } catch (error) {
