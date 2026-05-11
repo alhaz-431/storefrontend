@@ -4,17 +4,27 @@ import { FiShoppingCart, FiInfo } from "react-icons/fi";
 import Link from "next/link";
 import Image from "next/image";
 
-// এটা হলো আপনার ওষুধের ডাটার টাইপ (TypeScript Interface)
+// ১. ইন্টারফেস আপডেট (category: any দিয়েছি যাতে অবজেক্ট আসলেও এরর না দেয়)
 interface MedicineProps {
   id: string;
-  name: string;
+  name: any; 
   price: number;
   image: string;
-  category: string;
+  category: any; 
   stock: number;
 }
 
 export default function MedicineCard({ medicine }: { medicine: MedicineProps }) {
+  // ২. ক্যাটাগরি নাম বের করার লজিক
+  const categoryName = typeof medicine.category === 'object' 
+    ? medicine.category?.name 
+    : (medicine.category || "General");
+
+  // ৩. মেডিসিনের নাম বের করার লজিক (নিরাপত্তার জন্য)
+  const medicineName = typeof medicine.name === 'object' 
+    ? medicine.name?.name 
+    : medicine.name;
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -22,12 +32,18 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
     >
       {/* ইমেজ সেকশন */}
       <div className="relative h-48 w-full overflow-hidden">
-        <Image
-          src={medicine.image}
-          alt={medicine.name}
-          fill
-          className="object-cover group-hover:scale-110 transition-transform duration-500"
-        />
+        {medicine.image ? (
+          <Image
+            src={medicine.image}
+            alt={medicineName || "Medicine"}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+            No Image
+          </div>
+        )}
         <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-gray-700">
           {medicine.stock > 0 ? "In Stock" : "Out of Stock"}
         </div>
@@ -35,10 +51,16 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
 
       {/* কন্টেন্ট সেকশন */}
       <div className="p-4">
+        {/* ✅ ক্যাটাগরি ফিক্স: এখন আর অবজেক্ট এরর আসবে না */}
         <p className="text-[10px] uppercase tracking-wider text-emerald-600 font-bold mb-1">
-          {medicine.category}
+          {categoryName}
         </p>
-        <h3 className="font-bold text-gray-800 mb-1 truncate">{medicine.name}</h3>
+        
+        {/* ✅ নাম ফিক্স: নিরাপদ রেন্ডারিং */}
+        <h3 className="font-bold text-gray-800 mb-1 truncate">
+          {medicineName}
+        </h3>
+        
         <p className="text-lg font-black text-gray-900 mb-4">{medicine.price}৳</p>
 
         {/* বাটন সেকশন */}
