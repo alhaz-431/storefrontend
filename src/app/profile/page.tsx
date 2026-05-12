@@ -10,7 +10,7 @@ export default function ProfilePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#02040a] py-20 px-6">
+      <div className="min-h-screen bg-[#051a14] bg-gradient-to-br from-[#051a14] via-[#0a2e26] to-[#10b981]/5 py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-black italic uppercase text-white mb-10 tracking-tighter">
             Your <span className="text-emerald-500">Profile</span>
