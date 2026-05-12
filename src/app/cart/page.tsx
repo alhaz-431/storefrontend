@@ -20,7 +20,6 @@ export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const router = useRouter();
 
-  // ১. লোকাল স্টোরেজ থেকে ডাটা রিড করা
   useEffect(() => {
     const savedCart = localStorage.getItem("medistore_cart");
     if (savedCart) {
@@ -28,13 +27,11 @@ export default function CartPage() {
     }
   }, []);
 
-  // ২. কার্ট আপডেট ফাংশন
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);
     localStorage.setItem("medistore_cart", JSON.stringify(newCart));
   };
 
-  // ৩. কোয়ান্টিটি কন্ট্রোল (মিনিমাম ১, ম্যাক্সিমাম স্টক)
   const updateQuantity = (medicineId: string, delta: number) => {
     const newCart = cart.map((item) => {
       if (item.medicineId === medicineId) {
@@ -46,14 +43,12 @@ export default function CartPage() {
     updateCart(newCart);
   };
 
-  // ৪. আইটেম ডিলিট করা
   const removeItem = (medicineId: string) => {
     const newCart = cart.filter((item) => item.medicineId !== medicineId);
     updateCart(newCart);
     toast.success("Item removed from cart");
   };
 
-  // ৫. পুরো কার্ট ক্লিয়ার করা
   const clearCart = () => {
     if (confirm("Are you sure you want to clear the cart?")) {
       updateCart([]);
@@ -63,15 +58,14 @@ export default function CartPage() {
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // কার্ট খালি থাকলে যা দেখাবে
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#051a14] bg-gradient-to-b from-[#051a14] to-[#0a2e26] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#020d0a] flex items-center justify-center p-4">
         <div className="text-center">
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }} 
             animate={{ scale: 1, opacity: 1 }}
-            className="text-9xl mb-8 opacity-10"
+            className="text-9xl mb-8 opacity-5"
           >
             🛒
           </motion.div>
@@ -87,10 +81,10 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#051a14] bg-gradient-to-br from-[#051a14] via-[#0a2e26] to-[#10b981]/10 text-white py-12 md:py-20 px-6">
+    // এখানে ব্যাকগ্রাউন্ড আরও ডার্ক গ্রিন (#020d0a) করা হয়েছে
+    <div className="min-h-screen bg-[#020d0a] bg-gradient-to-br from-[#020d0a] via-[#051a14] to-[#020d0a] text-white py-12 md:py-20 px-6">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header */}
         <div className="flex justify-between items-end mb-16">
           <div>
             <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-4">
@@ -106,7 +100,6 @@ export default function CartPage() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-12">
-          {/* Cart Items List */}
           <div className="lg:col-span-2 space-y-6">
             <AnimatePresence mode="popLayout">
               {cart.map((item) => (
@@ -116,7 +109,7 @@ export default function CartPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="bg-white/5 border border-white/5 rounded-[40px] p-8 flex flex-col md:flex-row gap-8 items-center backdrop-blur-xl hover:bg-white/[0.08] transition-all group"
+                  className="bg-white/[0.03] border border-white/5 rounded-[40px] p-8 flex flex-col md:flex-row gap-8 items-center backdrop-blur-xl hover:bg-white/[0.07] transition-all group"
                 >
                   <div className="w-24 h-24 bg-emerald-500/10 rounded-3xl flex items-center justify-center text-4xl shadow-inner">
                     💊
@@ -138,7 +131,7 @@ export default function CartPage() {
                           <Plus size={16} />
                         </button>
                       </div>
-                      <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                      <span className="text-[10px] font-black text-white/10 uppercase tracking-widest">
                         Stock: {item.stock}
                       </span>
                     </div>
@@ -158,11 +151,9 @@ export default function CartPage() {
             </AnimatePresence>
           </div>
 
-          {/* Checkout Section */}
           <div className="lg:col-span-1">
-            <div className="bg-white/5 border border-white/10 rounded-[50px] p-10 backdrop-blur-3xl sticky top-24 shadow-2xl overflow-hidden">
-              {/* Decor circle inside card */}
-              <div className="absolute top-[-20%] right-[-20%] w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl" />
+            <div className="bg-white/[0.03] border border-white/10 rounded-[50px] p-10 backdrop-blur-3xl sticky top-24 shadow-2xl overflow-hidden">
+              <div className="absolute top-[-20%] right-[-20%] w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl" />
               
               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-10 pb-4 border-b border-white/5">
                 Summary
@@ -186,6 +177,7 @@ export default function CartPage() {
                 </p>
               </div>
 
+              {/* রাউটিং পাথ নিশ্চিত করুন আপনার ফোল্ডার স্ট্রাকচার অনুযায়ী */}
               <button
                 onClick={() => router.push('/customer/checkout')}
                 className="w-full bg-emerald-500 text-black py-6 rounded-3xl font-black uppercase italic text-sm tracking-widest hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 group"
