@@ -66,8 +66,8 @@ export default function CheckoutPage() {
 
         // ১৫০০ মিলি-সেকেন্ড পর রিডাইরেক্ট
         setTimeout(() => {
-          router.push("/customer/orders"); // এখানে পাথ নিশ্চিত করুন
-        }, 1500);
+          router.push("/customer/orders"); 
+        }, 500);
       }
     } catch (error: any) {
       const message = error.response?.data?.message || "অর্ডার প্লেস করতে সমস্যা হয়েছে";
