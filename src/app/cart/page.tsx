@@ -60,7 +60,7 @@ export default function CartPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#020d0a] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#051a14] bg-gradient-to-br from-[#051a14] via-[#0a2e26] to-[#10b981]/5  flex items-center justify-center p-4">
         <div className="text-center">
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }} 
