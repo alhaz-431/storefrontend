@@ -1,20 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Package, MapPin, Eye, XCircle, ChevronRight, Phone } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Package, MapPin, Eye, XCircle, ChevronRight, Phone, ShoppingBag } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 
-// ১. ইন্টারফেস ফিক্স (ব্যাকএন্ডের সাথে মিল রেখে)
 interface Order {
   id: string;
   orderNumber: string;
   status: string;
-  totalAmount: number; // ব্যাকএন্ডে এই নামে আছে
+  totalAmount: number; 
   shippingAddress: string;
-  shippingPhone: string; // নতুন যোগ করা হলো
+  shippingPhone: string;
   createdAt: string;
   items: any[];
 }
@@ -31,22 +30,24 @@ export default function OrdersPage() {
     setLoading(true);
     try {
       const res = await api.orders.getMyOrders();
-      setOrders(res.data || res || []);
+      // ডাটা হ্যান্ডলিং যাতে এরে না আসলেও ক্রাশ না করে
+      const data = res?.data?.data || res?.data || res;
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      toast.error("Failed to load orders");
+      toast.error("অর্ডার লিস্ট লোড করা সম্ভব হয়নি");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (!confirm("Are you sure you want to cancel this order?")) return;
+    if (!confirm("আপনি কি নিশ্চিত যে অর্ডারটি বাতিল করতে চান?")) return;
     try {
       await api.orders.updateStatus(orderId, "CANCELLED"); 
-      toast.success("Order cancelled successfully");
+      toast.success("অর্ডারটি বাতিল করা হয়েছে");
       fetchOrders();
     } catch (error) {
-      toast.error("Could not cancel order");
+      toast.error("অর্ডার বাতিল করা সম্ভব হয়নি");
     }
   };
 
@@ -61,112 +62,129 @@ export default function OrdersPage() {
     }
   };
 
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020d0a] flex items-center justify-center text-white italic font-black uppercase tracking-widest">
-        Loading <span className="text-emerald-500 ml-2 animate-pulse">Orders...</span>
+      <div className="min-h-screen bg-[#051a14] flex items-center justify-center">
+        <div className="text-center">
+           <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+           <p className="text-emerald-500 font-black italic tracking-widest animate-pulse uppercase text-xs">Fetching Orders...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#062d24,_#020d0a)] text-white p-6 lg:p-12">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-12">
+    <div className="min-h-screen bg-[#051a14] bg-gradient-to-br from-[#051a14] via-[#0a2e26] to-[#10b981]/10 text-white p-6 lg:p-12 relative overflow-hidden">
+      
+      {/* Background Glow */}
+      <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="mb-16">
           <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter leading-none"
           >
-            My <span className="text-emerald-500">Orders</span>
+            MY <span className="text-emerald-500">ORDERS</span>
           </motion.h1>
-          <p className="text-emerald-500/40 text-[10px] font-black uppercase tracking-[0.3em] mt-3">
-            Track and manage your recent medicine purchases
+          <p className="text-emerald-500/30 text-[10px] font-black uppercase tracking-[0.4em] mt-4">
+            Track your medical supplies and history
           </p>
         </div>
 
         {orders.length === 0 ? (
-          <div className="bg-white/[0.02] border border-white/5 rounded-[40px] p-24 text-center">
-            <Package className="mx-auto mb-6 text-emerald-500/20" size={60} />
-            <p className="text-slate-500 uppercase font-black text-[10px] tracking-[0.4em]">No orders found yet</p>
-            <Link href="/shop" className="mt-8 inline-block bg-emerald-600 px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest hover:bg-emerald-500 transition-all">
-              Start Shopping
+          <div className="bg-white/5 border border-white/5 rounded-[50px] p-24 text-center backdrop-blur-xl">
+            <ShoppingBag className="mx-auto mb-6 text-emerald-500/10" size={100} />
+            <p className="text-white/20 uppercase font-black text-xs tracking-[0.4em] mb-10">You haven't placed any orders yet</p>
+            <Link href="/customer" className="bg-emerald-500 text-black px-12 py-5 rounded-2xl text-xs font-black uppercase italic tracking-widest hover:scale-105 transition-all inline-block shadow-2xl shadow-emerald-500/20">
+              Start Exploring
             </Link>
           </div>
         ) : (
-          <div className="space-y-8">
-            {orders.map((order, index) => (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[35px] p-8 group relative overflow-hidden transition-all hover:border-emerald-500/30 shadow-2xl"
-              >
-                <div className="absolute -top-4 -left-2 text-white/[0.03] text-8xl font-black italic pointer-events-none">
-                  {index + 1}
-                </div>
-
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8 relative z-10">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-[10px] font-black px-2 py-1 bg-emerald-500 text-black uppercase rounded">Order #{index + 1}</span>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{formatDate(order.createdAt)}</span>
+          <div className="grid gap-8">
+            <AnimatePresence>
+              {orders.map((order, index) => (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[40px] p-8 md:p-10 group relative overflow-hidden transition-all hover:bg-white/[0.08] hover:border-emerald-500/20"
+                >
+                  {/* Order Header */}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-8 border-b border-white/5">
+                    <div>
+                      <div className="flex items-center gap-4 mb-3">
+                        <span className="text-[10px] font-black px-4 py-1.5 bg-emerald-500 text-black uppercase rounded-full shadow-lg shadow-emerald-500/20">
+                          #{index + 1}
+                        </span>
+                        <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">
+                          {new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">
+                        Ref: <span className="text-white/80">{order.orderNumber}</span>
+                      </h3>
                     </div>
-                    <h3 className="text-2xl font-black italic tracking-tight">Ref: {order.orderNumber}</h3>
+
+                    <div className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-xl ${statusStyle(order.status)}`}>
+                      {order.status}
+                    </div>
                   </div>
 
-                  <div className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-xl ${statusStyle(order.status)}`}>
-                    {order.status}
-                  </div>
-                </div>
+                  {/* Order Body */}
+                  <div className="grid md:grid-cols-3 gap-10 mb-10">
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black uppercase text-white/20 tracking-widest flex items-center gap-2">
+                         <MapPin size={14} className="text-emerald-500" /> Delivery To
+                      </p>
+                      <p className="text-sm font-bold text-white/70 leading-relaxed italic uppercase">
+                         {order.shippingAddress}
+                      </p>
+                      <div className="flex items-center gap-2 text-emerald-500/60 font-black text-[11px]">
+                        <Phone size={14} /> {order.shippingPhone || "No Phone Provided"}
+                      </div>
+                    </div>
 
-                <div className="grid md:grid-cols-3 gap-8 border-y border-white/5 py-8 mb-8 relative z-10">
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Shipping & Contact</p>
-                    <p className="text-xs font-bold text-slate-300 flex items-start gap-2">
-                      <MapPin size={14} className="text-emerald-500 shrink-0" /> {order.shippingAddress}
-                    </p>
-                    <p className="text-[11px] font-black text-emerald-500/60 flex items-center gap-2 mt-2">
-                      <Phone size={12} /> {order.shippingPhone || "No contact info"}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Total Payable</p>
-                    <p className="text-4xl font-black text-white italic">
-                        ৳{order.totalAmount || 0}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Package Details</p>
-                    <p className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                      <Package size={14} className="text-emerald-500" /> {order.items?.length || 0} Medicines
-                    </p>
-                  </div>
-                </div>
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black uppercase text-white/20 tracking-widest">Total Payable</p>
+                      <p className="text-5xl font-black text-white italic tracking-tighter">
+                          ৳{order.totalAmount || 0}
+                      </p>
+                    </div>
 
-                <div className="flex flex-wrap items-center gap-4 relative z-10">
-                  <Link
-                    href={`/customer/orders/${order.id}`}
-                    className="flex-1 md:flex-none inline-flex items-center justify-center gap-3 bg-white/5 hover:bg-emerald-600 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all group/btn"
-                  >
-                    <Eye size={16} /> View Details <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black uppercase text-white/20 tracking-widest flex items-center gap-2">
+                         <Package size={14} className="text-emerald-500" /> Package
+                      </p>
+                      <p className="text-xs font-black text-white/80 uppercase tracking-widest">
+                         {order.items?.length || 0} Items in Order
+                      </p>
+                    </div>
+                  </div>
 
-                  {order.status === "PLACED" && (
-                    <button
-                      onClick={() => handleCancelOrder(order.id)}
-                      className="flex-1 md:flex-none inline-flex items-center justify-center gap-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                  {/* Order Footer / Actions */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <Link
+                      href={`/customer/orders/${order.id}`}
+                      className="flex-1 md:flex-none inline-flex items-center justify-center gap-4 bg-white/5 hover:bg-white/10 border border-white/10 px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all group/btn shadow-xl shadow-black/20"
                     >
-                      <XCircle size={16} /> Cancel Order
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                      <Eye size={18} /> View Details <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+
+                    {order.status === "PLACED" && (
+                      <button
+                        onClick={() => handleCancelOrder(order.id)}
+                        className="flex-1 md:flex-none inline-flex items-center justify-center gap-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/20 shadow-xl shadow-red-500/5"
+                      >
+                        <XCircle size={18} /> Cancel Order
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
