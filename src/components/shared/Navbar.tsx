@@ -26,7 +26,13 @@ export default function Navbar() {
 
     checkData();
     window.addEventListener("storage", checkData);
-    return () => window.removeEventListener("storage", checkData);
+    // শপ পেজ থেকে কাস্টম ইভেন্ট লিসেনার (যদি আগে ব্যবহার করে থাকেন)
+    window.addEventListener("cartUpdated", checkData); 
+
+    return () => {
+      window.removeEventListener("storage", checkData);
+      window.removeEventListener("cartUpdated", checkData);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -76,22 +82,33 @@ export default function Navbar() {
 
         {/* DESKTOP & MOBILE RIGHT SECTION */}
         <div className="flex items-center gap-4 md:gap-6">
-          {/* Cart Icon - Always Visible */}
-          <Link href="/cart" className="relative text-white hover:text-emerald-500 transition-colors p-2 z-[110]">
-            <ShoppingCart size={22} />
+          
+          {/* Cart Icon - এমারেল্ড কালার এবং ব্যাকগ্রাউন্ড ইফেক্ট সহ */}
+          <Link href="/cart" className="relative text-emerald-500 bg-emerald-500/10 p-2.5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all z-[110] border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <ShoppingCart size={20} />
             {cartCount > 0 && (
-              <span className="absolute top-0 right-0 bg-emerald-500 text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-white">
+              <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          {/* Desktop Auth */}
+          {/* Desktop Auth - Logout এখন একটি বাটন এর ভেতরে */}
           <div className="hidden md:block">
             {isLoggedIn ? (
-              <button onClick={handleLogout} className="text-[10px] font-black uppercase text-red-500 hover:text-red-400 tracking-widest">Logout</button>
+              <button 
+                onClick={handleLogout} 
+                className="flex items-center gap-2 px-5 py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95"
+              >
+                <LogOut size={14} /> Logout
+              </button>
             ) : (
-              <Link href="/login" className="text-[10px] font-black uppercase text-white hover:text-emerald-500 tracking-widest">Login</Link>
+              <Link 
+                href="/login" 
+                className="px-5 py-2 bg-emerald-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
+              >
+                Login
+              </Link>
             )}
           </div>
 
@@ -142,19 +159,17 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center gap-4 text-xl font-black italic uppercase text-red-500"
+                  className="flex items-center gap-4 w-full p-4 bg-red-500/10 rounded-3xl text-xl font-black italic uppercase text-red-500 border border-red-500/20 shadow-lg active:scale-95 transition-all"
                 >
-                  <span className="p-3 bg-red-500/10 rounded-2xl"><LogOut size={18} /></span>
-                  Logout
+                  <LogOut size={20} /> Logout
                 </button>
               ) : (
                 <Link 
                   href="/login" 
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-4 text-xl font-black italic uppercase text-emerald-500"
+                  className="flex items-center gap-4 w-full p-4 bg-emerald-500 rounded-3xl text-xl font-black italic uppercase text-black shadow-lg active:scale-95 transition-all"
                 >
-                  <span className="p-3 bg-emerald-500/10 rounded-2xl"><User size={18} /></span>
-                  Login
+                  <User size={20} /> Login
                 </Link>
               )}
             </div>
