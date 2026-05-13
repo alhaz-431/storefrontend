@@ -58,45 +58,45 @@ export default function Hero({ searchQuery, setSearchQuery }: any) {
             </div>
           </motion.div>
 
-          {/* Right Image Section - Fix করা হয়েছে */}
-<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, delay: 0.3 }} className="relative hidden lg:block">
-  
-  {/* Main Image Container - height এবং পজিশন ঠিক করা হয়েছে */}
-  <div className="relative z-10 w-full h-[450px] lg:h-[550px] bg-white/5 rounded-[40px] md:rounded-[60px] border border-white/10 overflow-hidden backdrop-blur-sm shadow-2xl flex items-center justify-center">
-    <img 
-      src="https://images.unsplash.com/photo-1576091160550-2173dbc9992e?q=80&w=2070&auto=format&fit=crop" 
-      alt="Healthcare Service" 
-      className="w-full h-full object-cover opacity-90" // object-cover ব্যবহার করুন যাতে পুরো জায়গা জুড়ে থাকে
-    />
-    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e27]/80 via-transparent to-transparent" />
-  </div>
+          {/* Right Image Section - লোকাল ইমেজ পাথ দিয়ে আপডেট করা হয়েছে */}
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, delay: 0.3 }} className="relative hidden lg:block">
+            
+            <div className="relative z-10 w-full h-[450px] lg:h-[550px] bg-white/5 rounded-[40px] md:rounded-[60px] border border-white/10 overflow-hidden backdrop-blur-sm shadow-2xl flex items-center justify-center">
+              <img 
+                // ইমেজ পাথটি আপনার public/img ফোল্ডারের ফাইল অনুযায়ী দিন
+                src="/img/med7.jpg" 
+                alt="Healthcare Service" 
+                className="w-full h-full object-cover opacity-90"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e27]/80 via-transparent to-transparent" />
+            </div>
 
-  {/* Floating Offer Card - z-index বাড়িয়ে ইমেজের উপরে আনা হয়েছে */}
-  <motion.div 
-    animate={{ y: [0, -15, 0] }} 
-    transition={{ repeat: Infinity, duration: 4 }} 
-    className="absolute top-10 -left-10 z-20 bg-slate-900/90 backdrop-blur-2xl p-5 rounded-[24px] md:rounded-[32px] border border-white/20 shadow-2xl"
-  >
-    <p className="text-emerald-400 font-black text-[10px] uppercase mb-1">Flash Sale</p>
-    <h4 className="text-white font-bold text-sm md:text-base">20% Off Vitamins</h4>
-  </motion.div>
+            {/* Floating Offer Card */}
+            <motion.div 
+              animate={{ y: [0, -15, 0] }} 
+              transition={{ repeat: Infinity, duration: 4 }} 
+              className="absolute top-10 -left-10 z-20 bg-slate-900/90 backdrop-blur-2xl p-5 rounded-[24px] md:rounded-[32px] border border-white/20 shadow-2xl"
+            >
+              <p className="text-emerald-400 font-black text-[10px] uppercase mb-1">Flash Sale</p>
+              <h4 className="text-white font-bold text-sm md:text-base">20% Off Vitamins</h4>
+            </motion.div>
 
-  {/* Floating Delivery Card - পজিশন এবং z-index ঠিক করা হয়েছে */}
-  <motion.div 
-    animate={{ y: [0, 15, 0] }} 
-    transition={{ repeat: Infinity, duration: 4, delay: 1 }} 
-    className="absolute bottom-10 -right-5 z-20 bg-emerald-500 p-5 md:p-6 rounded-[24px] md:rounded-[32px] shadow-2xl"
-  >
-    <div className="flex items-center gap-3">
-      <FiTruck className="text-white" size={24} />
-      <div>
-        <p className="text-white/80 text-[10px] font-bold uppercase">Free Delivery</p>
-        <p className="text-white font-bold text-sm md:text-base">Orders 500৳+</p>
-      </div>
-    </div>
-  </motion.div>
+            {/* Floating Delivery Card */}
+            <motion.div 
+              animate={{ y: [0, 15, 0] }} 
+              transition={{ repeat: Infinity, duration: 4, delay: 1 }} 
+              className="absolute bottom-10 -right-5 z-20 bg-emerald-500 p-5 md:p-6 rounded-[24px] md:rounded-[32px] shadow-2xl"
+            >
+              <div className="flex items-center gap-3">
+                <FiTruck className="text-white" size={24} />
+                <div>
+                  <p className="text-white/80 text-[10px] font-bold uppercase">Free Delivery</p>
+                  <p className="text-white font-bold text-sm md:text-base">Orders 500৳+</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
 
-</motion.div>
         </div>
       </div>
     </section>
