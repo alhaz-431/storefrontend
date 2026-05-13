@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 import { FiShoppingCart, FiInfo } from "react-icons/fi";
 import Link from "next/link";
 import Image from "next/image";
+import toast from "react-hot-toast";
 
-// ১. ইন্টারফেস আপডেট (category: any দিয়েছি যাতে অবজেক্ট আসলেও এরর না দেয়)
 interface MedicineProps {
   id: string;
   name: any; 
@@ -15,64 +15,93 @@ interface MedicineProps {
 }
 
 export default function MedicineCard({ medicine }: { medicine: MedicineProps }) {
-  // ২. ক্যাটাগরি নাম বের করার লজিক
+  // ক্যাটাগরি এবং নাম বের করার লজিক
   const categoryName = typeof medicine.category === 'object' 
     ? medicine.category?.name 
     : (medicine.category || "General");
 
-  // ৩. মেডিসিনের নাম বের করার লজিক (নিরাপত্তার জন্য)
   const medicineName = typeof medicine.name === 'object' 
     ? medicine.name?.name 
     : medicine.name;
+
+  // কার্টে অ্যাড করার ফাংশন
+  const handleAddToCart = () => {
+    try {
+      const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
+      const existing = cart.find((item: any) => item.id === medicine.id);
+
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ 
+          ...medicine, 
+          medicineId: medicine.id, 
+          quantity: 1,
+          // ইমেজ পাথটি এখানেও নিশ্চিত করুন যাতে কার্ট পেজে ছবি দেখা যায়
+          image: medicine.image.startsWith('/') ? medicine.image : `/img/${medicine.image}`
+        });
+      }
+
+      localStorage.setItem("medistore_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("cartUpdated"));
+      toast.success(`${medicineName} added to cart!`);
+    } catch (error) {
+      toast.error("Failed to add to cart");
+    }
+  };
 
   return (
     <motion.div
       whileHover={{ y: -5 }}
       className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
     >
-      {/* ইমেজ সেকশন */}
-      <div className="relative h-48 w-full overflow-hidden">
+      {/* ইমেজ সেকশন - ইমেজ পাথ ফিক্স করা হয়েছে */}
+      <div className="relative h-48 w-full overflow-hidden bg-gray-50">
         {medicine.image ? (
-          <Image
-            src={medicine.image}
+          <img
+            // এখানে /img/ পাথটি যুক্ত করা হয়েছে
+            src={medicine.image.startsWith('/') ? medicine.image : `/img/${medicine.image}`}
             alt={medicineName || "Medicine"}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-500"
+            className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
             No Image
           </div>
         )}
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-gray-700">
+        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-gray-700 shadow-sm">
           {medicine.stock > 0 ? "In Stock" : "Out of Stock"}
         </div>
       </div>
 
-      {/* কন্টেন্ট সেকশন */}
       <div className="p-4">
-        {/* ✅ ক্যাটাগরি ফিক্স: এখন আর অবজেক্ট এরর আসবে না */}
         <p className="text-[10px] uppercase tracking-wider text-emerald-600 font-bold mb-1">
           {categoryName}
         </p>
         
-        {/* ✅ নাম ফিক্স: নিরাপদ রেন্ডারিং */}
         <h3 className="font-bold text-gray-800 mb-1 truncate">
           {medicineName}
         </h3>
         
         <p className="text-lg font-black text-gray-900 mb-4">{medicine.price}৳</p>
 
-        {/* বাটন সেকশন */}
         <div className="flex gap-2">
+          {/* View Details Link */}
           <Link 
             href={`/shop/${medicine.id}`}
             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all"
           >
             <FiInfo /> Details
           </Link>
+
+          {/* Add to Cart Button */}
           <button 
-            className="flex-[2] bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20"
+            onClick={handleAddToCart}
+            disabled={medicine.stock <= 0}
+            className={`flex-[2] py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg 
+              ${medicine.stock > 0 
+                ? "bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white shadow-blue-500/20" 
+                : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"}`}
           >
             <FiShoppingCart /> Add
           </button>
