@@ -37,7 +37,7 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
           ...medicine, 
           medicineId: medicine.id, 
           quantity: 1,
-          // ইমেজ পাথটি এখানেও নিশ্চিত করুন যাতে কার্ট পেজে ছবি দেখা যায়
+          
           image: medicine.image.startsWith('/') ? medicine.image : `/img/${medicine.image}`
         });
       }
@@ -55,11 +55,11 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
       whileHover={{ y: -5 }}
       className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
     >
-      {/* ইমেজ সেকশন - ইমেজ পাথ ফিক্স করা হয়েছে */}
+      
       <div className="relative h-48 w-full overflow-hidden bg-gray-50">
         {medicine.image ? (
           <img
-            // এখানে /img/ পাথটি যুক্ত করা হয়েছে
+            
             src={medicine.image.startsWith('/') ? medicine.image : `/img/${medicine.image}`}
             alt={medicineName || "Medicine"}
             className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
