@@ -111,7 +111,7 @@ export default function ShopPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-10">
-            <AnimatePresence>
+            <AnimatePresence mode="popLayout">
               {filteredMeds.map((med) => (
                 <motion.div
                   layout
@@ -132,7 +132,7 @@ export default function ShopPage() {
                   <div className="relative h-56 w-full bg-gradient-to-br from-white/[0.03] to-transparent rounded-[3rem] mb-8 flex items-center justify-center overflow-hidden border border-white/5 group-hover:from-emerald-500/10 transition-all duration-700">
                     {med.image ? (
                       <img
-                        src={med.image}
+                        src={`/img/${med.image}`} 
                         alt={med.name}
                         className="w-full h-full object-contain p-8 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-1000"
                       />
