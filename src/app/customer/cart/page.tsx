@@ -2,268 +2,178 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
-  MapPin, Phone, User, CreditCard, Package, 
-  ShoppingBag, CheckCircle, Truck, Shield,
-  Clock, Award, ArrowRight, Sparkles, Star, Zap
+  ShoppingBag, Trash2, Plus, Minus, 
+  ArrowRight, ChevronLeft, ShieldCheck 
 } from "lucide-react";
-import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
-export default function CheckoutPage() {
+export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  
-  const [shippingAddress, setShippingAddress] = useState("");
-  const [shippingName, setShippingName] = useState("");
-  const [shippingPhone, setShippingPhone] = useState("");
 
+  // লডিকাল স্টোরেজ থেকে কার্ট ডেটা লোড করা
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Please login first");
-      router.push("/login");
-      return;
-    }
-
     const savedCart = localStorage.getItem("medistore_cart");
     if (savedCart) {
-      const parsedCart = JSON.parse(savedCart);
-      setCart(parsedCart);
+      setCart(JSON.parse(savedCart));
     }
-    
-    const userStr = localStorage.getItem("medistore_user");
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setShippingName(user.name || "");
-      setShippingPhone(user.phone || "");
-    }
-  }, [router]);
+  }, []);
 
-  const totalAmount = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
-  const handlePlaceOrder = async () => {
-    if (!shippingName.trim()) {
-      toast.error("Please enter your name");
-      return;
-    }
-
-    if (!shippingPhone.trim()) {
-      toast.error("Please enter your phone number");
-      return;
-    }
-
-    if (!shippingAddress.trim()) {
-      toast.error("Please enter your shipping address");
-      return;
-    }
-
-    if (cart.length === 0) {
-      toast.error("Your cart is empty");
-      router.push("/shop");
-      return;
-    }
-
-    setLoading(true);
-    const toastId = toast.loading("Placing your order...");
-
-    try {
-      const orderData = {
-        items: cart.map((item) => ({
-          medicineId: item.medicineId || item.id,
-          quantity: Number(item.quantity),
-        })),
-        shippingAddress: shippingAddress.trim(),
-        shippingName: shippingName.trim(),
-        shippingPhone: shippingPhone.trim(),
-      };
-
-      await api.orders.create(orderData);
-      
-      localStorage.removeItem("medistore_cart");
-      
-      toast.success("Order placed successfully! 🎉", { id: toastId });
-
-      setTimeout(() => {
-        router.push("/orders");
-      }, 1000);
-
-    } catch (error: any) {
-      const errorMessage = 
-        error.response?.data?.error || 
-        error.response?.data?.message || 
-        "Failed to place order";
-      
-      toast.error(errorMessage, { id: toastId });
-    } finally {
-      setLoading(false);
-    }
+  // কার্ট আপডেট করার হেল্পার ফাংশন
+  const updateLocalStorage = (updatedCart: any[]) => {
+    setCart(updatedCart);
+    localStorage.setItem("medistore_cart", JSON.stringify(updatedCart));
   };
+
+  // পরিমাণ বাড়ানো
+  const incrementQty = (id: string) => {
+    const updated = cart.map(item => 
+      item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+    );
+    updateLocalStorage(updated);
+  };
+
+  // পরিমাণ কমানো
+  const decrementQty = (id: string) => {
+    const updated = cart.map(item => 
+      item.id === id && item.quantity > 1 
+        ? { ...item, quantity: item.quantity - 1 } 
+        : item
+    );
+    updateLocalStorage(updated);
+  };
+
+  // আইটেম রিমুভ করা
+  const removeItem = (id: string) => {
+    const updated = cart.filter(item => item.id !== id);
+    updateLocalStorage(updated);
+    toast.success("Item removed from cart");
+  };
+
+  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-          <ShoppingBag size={80} className="text-emerald-500 mx-auto mb-4 opacity-20" />
-          <h2 className="text-2xl font-bold text-white">Cart is Empty</h2>
-          <button onClick={() => router.push("/shop")} className="mt-4 text-emerald-400 font-bold underline">Browse Shop</button>
+      <div className="min-h-screen bg-[#0b0f1a] flex flex-col items-center justify-center p-4 text-center">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+          <ShoppingBag size={100} className="text-emerald-500/20 mb-6" />
+          <h2 className="text-3xl font-bold text-white mb-2">Your cart is empty</h2>
+          <p className="text-slate-400 mb-8">Looks like you haven't added any medicines yet.</p>
+          <button 
+            onClick={() => router.push("/shop")}
+            className="bg-emerald-500 text-slate-900 px-8 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-colors"
+          >
+            Start Shopping
+          </button>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f1a] text-slate-200 py-10">
-      {/* Background Glow */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-600/10 blur-[100px] rounded-full" />
-      </div>
-
-      <div className="container mx-auto px-4 relative z-10 max-w-6xl">
-        <div className="flex items-center gap-2 mb-8">
-            <div className="h-1 w-12 bg-emerald-500 rounded-full"></div>
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Finalizing <span className="text-emerald-500">Order</span></h1>
+    <div className="min-h-screen bg-[#0b0f1a] text-slate-200 py-12">
+      <div className="container mx-auto px-4 max-w-5xl">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-400 hover:text-emerald-400 transition-colors mb-2 text-sm">
+              <ChevronLeft size={16} /> Continue Shopping
+            </button>
+            <h1 className="text-4xl font-black text-white">Shopping <span className="text-emerald-500">Cart</span></h1>
+          </div>
+          <div className="text-right">
+            <p className="text-slate-400 text-sm">Items in Cart</p>
+            <p className="text-2xl font-bold text-white">{cart.length}</p>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-8">
-          {/* Left: Forms */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* Featured Promo Banner */}
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 p-4 rounded-2xl flex items-center gap-4"
-            >
-              <div className="bg-emerald-500 p-2 rounded-lg shadow-lg shadow-emerald-500/40">
-                <Zap size={20} className="text-white fill-current" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">Express Delivery Active!</p>
-                <p className="text-xs text-emerald-300/80">Get your medicines within 12 hours in city areas.</p>
-              </div>
-            </motion.div>
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Cart Items List */}
+          <div className="lg:col-span-2 space-y-4">
+            <AnimatePresence>
+              {cart.map((item) => (
+                <motion.div 
+                  key={item.id}
+                  layout
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 20, opacity: 0 }}
+                  className="bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center gap-4 group"
+                >
+                  <div className="w-20 h-20 bg-slate-800 rounded-xl flex-shrink-0 overflow-hidden">
+                    <img src={item.image || "/placeholder-med.png"} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-white truncate">{item.name}</h3>
+                    <p className="text-emerald-500 font-bold">৳{item.price}</p>
+                  </div>
 
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-8">
-                <MapPin className="text-emerald-500" />
-                <h2 className="text-xl font-bold text-white">Shipping Information</h2>
-              </div>
+                  {/* Quantity Selector */}
+                  <div className="flex items-center bg-slate-900 rounded-lg p-1 border border-white/5">
+                    <button onClick={() => decrementQty(item.id)} className="p-1 hover:text-emerald-500 transition-colors">
+                      <Minus size={18} />
+                    </button>
+                    <span className="w-8 text-center font-bold text-white">{item.quantity}</span>
+                    <button onClick={() => incrementQty(item.id)} className="p-1 hover:text-emerald-500 transition-colors">
+                      <Plus size={18} />
+                    </button>
+                  </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase ml-1">Full Name</label>
-                  <input 
-                    value={shippingName} 
-                    onChange={(e) => setShippingName(e.target.value)}
-                    className="w-full bg-slate-900/50 border border-white/5 rounded-xl px-4 py-3 focus:border-emerald-500/50 outline-none transition-all"
-                    placeholder="Receiver's name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase ml-1">Phone</label>
-                  <input 
-                    value={shippingPhone} 
-                    onChange={(e) => setShippingPhone(e.target.value)}
-                    className="w-full bg-slate-900/50 border border-white/5 rounded-xl px-4 py-3 focus:border-emerald-500/50 outline-none transition-all"
-                    placeholder="017xxxxxxxx"
-                  />
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase ml-1">Delivery Address</label>
-                  <textarea 
-                    value={shippingAddress} 
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    rows={3}
-                    className="w-full bg-slate-900/50 border border-white/5 rounded-xl px-4 py-3 focus:border-emerald-500/50 outline-none transition-all resize-none"
-                    placeholder="Full address (House, Road, Area...)"
-                  />
-                </div>
-              </div>
-            </div>
+                  <div className="text-right min-w-[80px]">
+                    <p className="font-black text-white">৳{item.price * item.quantity}</p>
+                  </div>
 
-            {/* Featured: Order Benefits */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    {icon: Shield, text: "Verified", color: "text-blue-400"},
-                    {icon: Award, text: "Original", color: "text-emerald-400"},
-                    {icon: Truck, text: "Fast Ship", color: "text-purple-400"},
-                    {icon: Star, text: "Premium", color: "text-yellow-400"}
-                ].map((item, i) => (
-                    <div key={i} className="bg-white/5 p-4 rounded-2xl border border-white/5 flex flex-col items-center gap-2">
-                        <item.icon className={item.color} size={20} />
-                        <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">{item.text}</span>
-                    </div>
-                ))}
-            </div>
+                  <button 
+                    onClick={() => removeItem(item.id)}
+                    className="p-2 text-slate-500 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
 
-          {/* Right: Summary */}
-          <div className="lg:col-span-5">
-            <div className="bg-[#161b2c] border border-white/10 rounded-[32px] p-6 sticky top-6 shadow-2xl">
-              <h2 className="text-xl font-bold text-white mb-6 flex items-center justify-between">
-                Review Items
-                <span className="bg-emerald-500/10 text-emerald-400 text-xs px-3 py-1 rounded-full border border-emerald-500/20">{cart.length} Products</span>
-              </h2>
-
-              <div className="space-y-3 mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scroll">
-                {cart.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/5">
-                    <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 font-bold">
-                        {item.quantity}x
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-white text-sm truncate">{item.name}</p>
-                      <p className="text-xs text-slate-400">৳{item.price} per unit</p>
-                    </div>
-                    <p className="font-bold text-emerald-400">৳{item.price * item.quantity}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-3 border-t border-white/10 pt-6 mb-6">
-                <div className="flex justify-between text-slate-400 text-sm">
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-[#161b2c] border border-white/10 rounded-[32px] p-6 sticky top-6">
+              <h2 className="text-xl font-bold text-white mb-6">Order Summary</h2>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex justify-between text-slate-400">
                   <span>Subtotal</span>
-                  <span className="text-white">৳{totalAmount.toFixed(2)}</span>
+                  <span className="text-white font-bold">৳{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-slate-400 text-sm">
-                  <span>Delivery Charge</span>
+                <div className="flex justify-between text-slate-400">
+                  <span>Delivery</span>
                   <span className="text-emerald-400 font-bold">FREE</span>
                 </div>
-                <div className="flex justify-between items-end pt-2">
-                  <span className="text-white font-bold">Payable Amount</span>
-                  <span className="text-3xl font-black text-white">৳{totalAmount.toFixed(2)}</span>
+                <div className="h-px bg-white/10 w-full" />
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-bold">Total</span>
+                  <span className="text-3xl font-black text-emerald-500">৳{subtotal.toFixed(2)}</span>
                 </div>
               </div>
 
               <button 
-                onClick={handlePlaceOrder}
-                disabled={loading}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-[#0b0f1a] py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all group active:scale-95"
+                onClick={() => router.push("/checkout")}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
               >
-                {loading ? "PROCESSING..." : (
-                    <>
-                        PLACE ORDER NOW
-                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                    </>
-                )}
+                PROCEED TO CHECKOUT
+                <ArrowRight size={20} />
               </button>
 
-              <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                <Shield size={12} /> SSL Secure Payment Method
+              <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                <ShieldCheck size={14} className="text-emerald-500" /> 100% Secure Checkout
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #10b98150; border-radius: 10px; }
-      `}</style>
     </div>
   );
 }
