@@ -63,8 +63,8 @@ export default function Hero({ searchQuery, setSearchQuery }: any) {
             
             <div className="relative z-10 w-full h-[450px] lg:h-[550px] bg-white/5 rounded-[40px] md:rounded-[60px] border border-white/10 overflow-hidden backdrop-blur-sm shadow-2xl flex items-center justify-center">
               <img 
-                // ইমেজ পাথটি আপনার public/img ফোল্ডারের ফাইল অনুযায়ী দিন
-                src="/img/med7.jpg" 
+                
+                src="/img/medi13.jpg" 
                 alt="Healthcare Service" 
                 className="w-full h-full object-cover opacity-90"
               />
