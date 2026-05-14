@@ -2,7 +2,7 @@
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://storemedistore.onrender.com/api/v1"; // ✅ FIXED (v1 added)
+  "https://storemedistore.onrender.com/api/v1";
 
 // 🔑 Token getter
 const getToken = () => {
@@ -13,10 +13,14 @@ const getToken = () => {
 };
 
 // 🔑 Headers builder
-const buildHeaders = (customHeaders?: HeadersInit) => {
+const buildHeaders = (
+  customHeaders?: HeadersInit,
+  isFormData = false
+) => {
   const headers = new Headers(customHeaders);
 
-  if (!headers.has("Content-Type")) {
+  // ❗ FormData হলে content-type দিবা না
+  if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -29,13 +33,17 @@ const buildHeaders = (customHeaders?: HeadersInit) => {
 };
 
 // 🚀 Main fetcher
-const fetcher = async (endpoint: string, options: RequestInit = {}) => {
+const fetcher = async (
+  endpoint: string,
+  options: RequestInit = {},
+  isFormData = false
+) => {
   const fullUrl = `${BASE_URL}${endpoint}`;
 
   try {
     const res = await fetch(fullUrl, {
       ...options,
-      headers: buildHeaders(options.headers),
+      headers: buildHeaders(options.headers, isFormData),
       cache: "no-store",
     });
 
@@ -61,7 +69,7 @@ export const api = {
         body: JSON.stringify(data),
       });
 
-      // ✅ AUTO SAVE TOKEN
+      // ✅ token save
       if (typeof window !== "undefined" && res.token) {
         localStorage.setItem("token", res.token);
       }
@@ -81,17 +89,27 @@ export const api = {
 
     getById: (id: string) => fetcher(`/medicines/${id}`),
 
-    create: (data: any) =>
-      fetcher("/medicines/add", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+    // ✅ FIXED (FormData)
+    create: (data: FormData) =>
+      fetcher(
+        "/medicines/add",
+        {
+          method: "POST",
+          body: data,
+        },
+        true
+      ),
 
-    update: (id: string, data: any) =>
-      fetcher(`/medicines/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      }),
+    // ✅ FIXED (FormData)
+    update: (id: string, data: FormData) =>
+      fetcher(
+        `/medicines/${id}`,
+        {
+          method: "PATCH",
+          body: data,
+        },
+        true
+      ),
 
     delete: (id: string) =>
       fetcher(`/medicines/${id}`, {
@@ -104,24 +122,19 @@ export const api = {
   },
 
   orders: {
-    // ✅ CREATE ORDER
     create: (data: any) =>
       fetcher("/orders", {
         method: "POST",
         body: JSON.stringify(data),
       }),
 
-    // ✅ USER OWN ORDERS
     getMyOrders: () => fetcher("/orders/my"),
 
-    // ✅ ADMIN ONLY
     getAllOrders: () => fetcher("/orders"),
 
-    // ✅ GET SINGLE ORDER DETAILS
     getOrderById: (id: string) =>
       fetcher(`/orders/${id}`),
 
-    // ✅ UPDATE ORDER STATUS (For Cancel or Admin Update)
     updateStatus: (id: string, status: string) =>
       fetcher(`/orders/${id}`, {
         method: "PATCH",
@@ -132,7 +145,6 @@ export const api = {
   admin: {
     getAllUsers: () => fetcher("/admin/users"),
 
-    // Admin Specific status update if endpoint is different
     updateOrderStatus: (id: string, status: string) =>
       fetcher(`/admin/orders/${id}`, {
         method: "PATCH",

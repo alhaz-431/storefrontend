@@ -31,14 +31,14 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
       {/* Brand Logo */}
       <div className="flex items-center justify-between mb-10 px-2">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-2.5 rounded-2xl rotate-3 shadow-lg shadow-indigo-600/20">
+          <div className="bg-emerald-600 p-2.5 rounded-2xl rotate-3 shadow-lg shadow-emerald-600/20">
             <Activity size={24} className="text-white" />
           </div>
           <span className="text-xl font-black italic tracking-tighter uppercase text-white">
-            Medi<span className="text-indigo-500">Store</span>
+            Medi<span className="text-emerald-500">Store</span>
           </span>
         </div>
-        <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
+        <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 text-emerald-800 hover:text-white transition-colors">
           <X size={24} />
         </button>
       </div>
@@ -53,14 +53,14 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                 whileHover={{ x: 5 }}
                 className={`flex items-center justify-between px-5 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest transition-all duration-300 ${
                 isActive 
-                ? "bg-indigo-600 text-white shadow-xl shadow-indigo-900/40 border border-indigo-400/20" 
-                : "text-slate-400 hover:bg-white/5 hover:text-indigo-400"
+                ? "bg-emerald-600 text-white shadow-xl shadow-emerald-950/40 border border-emerald-400/20" 
+                : "text-emerald-900 hover:bg-emerald-500/5 hover:text-emerald-400"
               }`}>
                 <div className="flex items-center gap-4">
                   {item.icon}
                   {item.label}
                 </div>
-                {isActive && <ChevronRight size={14} className="text-indigo-200" />}
+                {isActive && <ChevronRight size={14} className="text-emerald-200" />}
               </motion.div>
             </Link>
           );
@@ -68,7 +68,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
       </nav>
 
       {/* Bottom Profile/Logout */}
-      <div className="mt-auto pt-6 border-t border-white/5">
+      <div className="mt-auto pt-6 border-t border-emerald-900/10">
         <button className="flex items-center gap-4 px-5 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-rose-500 hover:bg-rose-500/10 transition-all w-full text-left group">
           <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" /> 
           Sign Out
@@ -78,10 +78,10 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
   );
 
   return (
-    <div className="flex min-h-screen bg-[#030305] text-slate-200">
+    <div className="flex min-h-screen bg-[#051a10] text-emerald-50">
       
       {/* --- DESKTOP SIDEBAR --- */}
-      <aside className="w-80 border-r border-white/5 bg-[#08080f] p-8 hidden lg:flex flex-col sticky top-0 h-screen">
+      <aside className="w-80 border-r border-emerald-900/20 bg-[#0a2e1f] p-8 hidden lg:flex flex-col sticky top-0 h-screen">
         <SidebarContent />
       </aside>
 
@@ -94,14 +94,14 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] lg:hidden"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] lg:hidden"
             />
             <motion.aside 
               initial={{ x: "-100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "-100%", opacity: 0 }}
               transition={{ type: "spring", damping: 20, stiffness: 100 }}
-              className="fixed top-0 left-0 bottom-0 w-[300px] bg-[#08080f] p-8 z-[70] lg:hidden flex flex-col border-r border-indigo-500/10"
+              className="fixed top-0 left-0 bottom-0 w-[300px] bg-[#0a2e1f] p-8 z-[70] lg:hidden flex flex-col border-r border-emerald-500/10"
             >
               <SidebarContent />
             </motion.aside>
@@ -113,34 +113,34 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
       <main className="flex-1 flex flex-col min-w-0">
         
         {/* HEADER */}
-        <header className="h-16 md:h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-10 bg-[#030305]/80 backdrop-blur-2xl sticky top-0 z-50">
-           <button 
-             onClick={() => setIsOpen(true)}
-             className="lg:hidden p-2.5 bg-indigo-600/10 rounded-xl text-indigo-500 border border-indigo-500/20 hover:bg-indigo-600/20 transition-all"
-           >
-             <Menu size={22} />
-           </button>
+        <header className="h-16 md:h-20 border-b border-emerald-900/10 flex items-center justify-between px-6 md:px-10 bg-[#051a10]/80 backdrop-blur-2xl sticky top-0 z-50">
+            <button 
+              onClick={() => setIsOpen(true)}
+              className="lg:hidden p-2.5 bg-emerald-600/10 rounded-xl text-emerald-500 border border-emerald-500/20 hover:bg-emerald-600/20 transition-all"
+            >
+              <Menu size={22} />
+            </button>
 
-           <div className="flex lg:hidden items-center gap-2 absolute left-1/2 -translate-x-1/2">
-              <Activity size={20} className="text-indigo-500" />
-              <span className="text-sm font-black italic tracking-tighter uppercase text-white">MediStore</span>
-           </div>
+            <div className="flex lg:hidden items-center gap-2 absolute left-1/2 -translate-x-1/2">
+               <Activity size={20} className="text-emerald-500" />
+               <span className="text-sm font-black italic tracking-tighter uppercase text-white">MediStore</span>
+            </div>
 
-           <div className="flex items-center gap-4 ml-auto">
-              <div className="text-right hidden sm:block">
-                <p className="text-[9px] font-black uppercase text-indigo-500 tracking-widest leading-none mb-1">Authenticated Seller</p>
-                <p className="text-xs font-bold text-white uppercase tracking-tight">Alfaz Arbby</p>
-              </div>
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 border border-white/10 flex items-center justify-center font-black text-white text-xs shadow-lg shadow-indigo-600/20">
-                AA
-              </div>
-           </div>
+            <div className="flex items-center gap-4 ml-auto">
+               <div className="text-right hidden sm:block">
+                 <p className="text-[9px] font-black uppercase text-emerald-500 tracking-widest leading-none mb-1">Authenticated Seller</p>
+                 <p className="text-xs font-bold text-white uppercase tracking-tight">Alfaz Arbby</p>
+               </div>
+               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 border border-emerald-400/20 flex items-center justify-center font-black text-white text-xs shadow-lg shadow-emerald-900/40">
+                 AA
+               </div>
+            </div>
         </header>
 
         {/* PAGE CONTENT */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           className="p-6 md:p-10 flex-1 overflow-x-hidden" 
         >
