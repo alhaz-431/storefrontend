@@ -81,7 +81,6 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    // ✅ নতুন যোগ করা হয়েছে: বর্তমান ইউজারের তথ্য ডাটাবেস থেকে আনার জন্য
     getMe: () => fetcher("/auth/me"), 
   },
 
@@ -106,19 +105,23 @@ export const api = {
     getMyOrders: () => fetcher("/orders/my"),
     getAllOrders: () => fetcher("/orders"),
     getOrderById: (id: string) => fetcher(`/orders/${id}`),
-    updateStatus: (id: string, status: string) =>
-      fetcher(`/orders/${id}`, {
+    
+    // ✅ এখানে পরিবর্তন করা হয়েছে: status: string এর বদলে data: any করা হয়েছে
+    updateStatus: (id: string, data: { status: string }) =>
+      fetcher(`/orders/status/${id}`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(data),
       }),
   },
 
   admin: {
     getAllUsers: () => fetcher("/admin/users"),
-    updateOrderStatus: (id: string, status: string) =>
+    
+    // ✅ এখানেও একই পরিবর্তন করা হয়েছে
+    updateOrderStatus: (id: string, data: { status: string }) =>
       fetcher(`/admin/orders/${id}`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(data),
       }),
   },
 };

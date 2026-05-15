@@ -22,21 +22,17 @@ export default function SellerProfile() {
 
   const [tempData, setTempData] = useState({ ...sellerInfo });
 
-  // ✅ ডাটাবেস থেকে অরিজিনাল রেজিস্ট্রেশন ডেটা আনা
   useEffect(() => {
     const loadProfileData = async () => {
       try {
         setLoading(true);
-        // api.ts থেকে getMe মেথড কল করা হচ্ছে
         const response = await api.auth.getMe(); 
-        
-        // ব্যাকএন্ড যদি সরাসরি ডেটা পাঠায় অথবা .data এর ভেতর পাঠায়
         const user = response?.data || response;
 
         if (user) {
           const fetchedData = {
-            name: user.name || "MediStore User", // রেজিস্ট্রেশনের নাম
-            email: user.email || "",             // রেজিস্ট্রেশনের ইমেইল
+            name: user.name || "MediStore User",
+            email: user.email || "",
             phone: user.phone || "Not set yet",
             address: user.address || "Not set yet",
             role: user.role || "Seller"
@@ -45,9 +41,7 @@ export default function SellerProfile() {
           setTempData(fetchedData);
         }
       } catch (error: any) {
-        console.error("Profile Load Error:", error);
-        // টোকেন না থাকলে বা এরর হলে ইউজারকে জানানো
-        toast.error("সেশন শেষ হয়ে গেছে, আবার লগইন করুন।");
+        toast.error("সেশন শেষ হয়ে গেছে, আবার লগইন করুন।");
       } finally {
         setLoading(false);
       }
@@ -59,20 +53,18 @@ export default function SellerProfile() {
   const handleSave = async () => {
     const toastId = toast.loading("তথ্য আপডেট হচ্ছে...");
     try {
-      // এখানে আপনার এডিট করা ডেটা ব্যাকএন্ডে পাঠানোর জন্য PATCH রিকোয়েস্ট দিতে পারেন
-      // await api.user.updateProfile(tempData);
-      
+      // await api.user.updateProfile(tempData); // আপনার এন্ডপয়েন্ট অনুযায়ী আনকমেন্ট করুন
       setSellerInfo(tempData);
       setIsEditing(false);
-      toast.success("প্রোফাইল আপডেট সফল হয়েছে!", { id: toastId });
+      toast.success("প্রোফাইল আপডেট সফল হয়েছে!", { id: toastId });
     } catch (error) {
-      toast.error("আপডেট করা সম্ভব হয়নি", { id: toastId });
+      toast.error("আপডেট করা সম্ভব হয়নি", { id: toastId });
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         <Loader2 className="animate-spin text-indigo-600 mb-4" size={40} />
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Profile...</p>
       </div>
@@ -80,127 +72,142 @@ export default function SellerProfile() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-end mb-10">
-        <div>
-          <h1 className="text-4xl font-black italic uppercase text-indigo-950 tracking-tighter">
-            My <span className="text-indigo-600">Account</span>
-          </h1>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Registration Details</p>
-        </div>
-        
-        {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-indigo-900 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-800 transition-all shadow-lg shadow-indigo-900/20">
-            <Edit3 size={16} /> Edit Profile
-          </button>
-        ) : (
-          <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">
-            <X size={16} /> Cancel
-          </button>
-        )}
-      </div>
-
-      <div className="grid lg:grid-cols-12 gap-8">
-        {/* Avatar Card */}
-        <div className="lg:col-span-4">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-slate-200 rounded-[40px] p-8 text-center shadow-sm h-fit sticky top-6"
-          >
-            <div className="w-24 h-24 bg-indigo-50 border-2 border-indigo-100 rounded-[35%] mx-auto mb-4 flex items-center justify-center text-4xl font-black text-indigo-600 italic shadow-inner">
-              {sellerInfo.name?.charAt(0).toUpperCase()}
-            </div>
-            <h2 className="text-xl font-black text-indigo-950 uppercase italic tracking-tight truncate">{sellerInfo.name}</h2>
-            <div className="flex items-center justify-center gap-1.5 text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-full mt-3">
-              <BadgeCheck size={14} />
-              <span className="text-[9px] font-black uppercase tracking-widest">{sellerInfo.role}</span>
-            </div>
-          </motion.div>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-10">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight">
+              My <span className="text-indigo-600">Account</span>
+            </h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Manage your identity and details</p>
+          </div>
+          
+          {!isEditing ? (
+            <button 
+              onClick={() => setIsEditing(true)} 
+              className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+            >
+              <Edit3 size={16} /> Edit Profile
+            </button>
+          ) : (
+            <button 
+              onClick={() => setIsEditing(false)} 
+              className="flex items-center gap-2 bg-white text-slate-500 border border-slate-200 px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-slate-50 transition-all"
+            >
+              <X size={16} /> Cancel
+            </button>
+          )}
         </div>
 
-        {/* Form Details */}
-        <div className="lg:col-span-8">
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white border border-slate-200 rounded-[40px] p-6 md:p-10 shadow-sm"
-          >
-            <div className="space-y-8">
-              {/* Name */}
-              <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Full Name (Registered)</label>
-                <div className="relative mt-2 group">
-                  <User className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isEditing ? 'text-indigo-500' : 'text-slate-300'}`} size={18} />
-                  <input 
-                    type="text"
-                    disabled={!isEditing}
-                    value={isEditing ? tempData.name : sellerInfo.name}
-                    onChange={(e) => setTempData({...tempData, name: e.target.value})}
-                    className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:border-indigo-600 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
-                  />
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Avatar Card */}
+          <div className="lg:col-span-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-[32px] p-10 text-center shadow-sm h-fit sticky top-6"
+            >
+              <div className="relative w-28 h-28 mx-auto mb-6">
+                <div className="w-full h-full bg-indigo-50 border-2 border-indigo-100 rounded-[40%] flex items-center justify-center text-4xl font-black text-indigo-600 italic">
+                  {sellerInfo.name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-full shadow-md border border-slate-100">
+                   <BadgeCheck className="text-emerald-500" size={24} />
                 </div>
               </div>
-
-              {/* Email - Read Only */}
-              <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Email Address (Locked)</label>
-                <div className="relative mt-2">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                  <input 
-                    type="email"
-                    disabled
-                    value={sellerInfo.email}
-                    className="w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold bg-slate-100 border-transparent text-slate-400 cursor-not-allowed"
-                  />
-                </div>
+              
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight truncate">{sellerInfo.name}</h2>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">{sellerInfo.email}</p>
+              
+              <div className="inline-flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl mt-6 border border-indigo-100">
+                <span className="text-[10px] font-black uppercase tracking-widest">{sellerInfo.role} Access</span>
               </div>
+            </motion.div>
+          </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Phone */}
-                <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Phone Number</label>
-                  <div className="relative mt-2">
-                    <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 ${isEditing ? 'text-indigo-500' : 'text-slate-300'}`} size={18} />
+          {/* Form Details */}
+          <div className="lg:col-span-8">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white border border-slate-200 rounded-[32px] p-6 md:p-10 shadow-sm"
+            >
+              <div className="space-y-8">
+                {/* Name */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Full Name</label>
+                  <div className="relative group">
+                    <User className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isEditing ? 'text-indigo-600' : 'text-slate-300'}`} size={18} />
                     <input 
                       type="text"
                       disabled={!isEditing}
-                      value={isEditing ? tempData.phone : sellerInfo.phone}
-                      onChange={(e) => setTempData({...tempData, phone: e.target.value})}
-                      className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:border-indigo-600 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
+                      value={isEditing ? tempData.name : sellerInfo.name}
+                      onChange={(e) => setTempData({...tempData, name: e.target.value})}
+                      className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:ring-4 focus:ring-indigo-50 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500 cursor-not-allowed'}`}
                     />
                   </div>
                 </div>
 
-                {/* Address */}
-                <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Address</label>
-                  <div className="relative mt-2">
-                    <MapPin className={`absolute left-4 top-1/2 -translate-y-1/2 ${isEditing ? 'text-indigo-500' : 'text-slate-300'}`} size={18} />
+                {/* Email - Read Only */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Email Address (Read Only)</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                     <input 
-                      type="text"
-                      disabled={!isEditing}
-                      value={isEditing ? tempData.address : sellerInfo.address}
-                      onChange={(e) => setTempData({...tempData, address: e.target.value})}
-                      className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:border-indigo-600 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
+                      type="email"
+                      disabled
+                      value={sellerInfo.email}
+                      className="w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold bg-slate-50 border border-slate-100 text-slate-400 cursor-not-allowed"
                     />
                   </div>
                 </div>
-              </div>
 
-              {isEditing && (
-                <motion.button 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={handleSave}
-                  className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black uppercase text-[12px] tracking-[0.2em] shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
-                >
-                  <Save size={20} /> Update Account Info
-                </motion.button>
-              )}
-            </div>
-          </motion.div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Phone */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Phone Number</label>
+                    <div className="relative">
+                      <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 ${isEditing ? 'text-indigo-600' : 'text-slate-300'}`} size={18} />
+                      <input 
+                        type="text"
+                        disabled={!isEditing}
+                        value={isEditing ? tempData.phone : sellerInfo.phone}
+                        onChange={(e) => setTempData({...tempData, phone: e.target.value})}
+                        className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:ring-4 focus:ring-indigo-50 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Store/Home Address</label>
+                    <div className="relative">
+                      <MapPin className={`absolute left-4 top-1/2 -translate-y-1/2 ${isEditing ? 'text-indigo-600' : 'text-slate-300'}`} size={18} />
+                      <input 
+                        type="text"
+                        disabled={!isEditing}
+                        value={isEditing ? tempData.address : sellerInfo.address}
+                        onChange={(e) => setTempData({...tempData, address: e.target.value})}
+                        className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:ring-4 focus:ring-indigo-50 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {isEditing && (
+                  <motion.button 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    onClick={handleSave}
+                    className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
+                  >
+                    <Save size={18} /> Save Changes
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>
