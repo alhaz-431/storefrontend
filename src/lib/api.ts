@@ -19,7 +19,6 @@ const buildHeaders = (
 ) => {
   const headers = new Headers(customHeaders);
 
-  // ❗ FormData হলে content-type দিবা না
   if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -69,7 +68,6 @@ export const api = {
         body: JSON.stringify(data),
       });
 
-      // ✅ token save
       if (typeof window !== "undefined" && res.token) {
         localStorage.setItem("token", res.token);
       }
@@ -82,39 +80,20 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+
+    // ✅ নতুন যোগ করা হয়েছে: বর্তমান ইউজারের তথ্য ডাটাবেস থেকে আনার জন্য
+    getMe: () => fetcher("/auth/me"), 
   },
 
   medicines: {
     getAll: () => fetcher("/medicines"),
-
     getById: (id: string) => fetcher(`/medicines/${id}`),
-
-    // ✅ FIXED (FormData)
     create: (data: FormData) =>
-      fetcher(
-        "/medicines/add",
-        {
-          method: "POST",
-          body: data,
-        },
-        true
-      ),
-
-    // ✅ FIXED (FormData)
+      fetcher("/medicines/add", { method: "POST", body: data }, true),
     update: (id: string, data: FormData) =>
-      fetcher(
-        `/medicines/${id}`,
-        {
-          method: "PATCH",
-          body: data,
-        },
-        true
-      ),
-
+      fetcher(`/medicines/${id}`, { method: "PATCH", body: data }, true),
     delete: (id: string) =>
-      fetcher(`/medicines/${id}`, {
-        method: "DELETE",
-      }),
+      fetcher(`/medicines/${id}`, { method: "DELETE" }),
   },
 
   categories: {
@@ -123,18 +102,10 @@ export const api = {
 
   orders: {
     create: (data: any) =>
-      fetcher("/orders", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-
+      fetcher("/orders", { method: "POST", body: JSON.stringify(data) }),
     getMyOrders: () => fetcher("/orders/my"),
-
     getAllOrders: () => fetcher("/orders"),
-
-    getOrderById: (id: string) =>
-      fetcher(`/orders/${id}`),
-
+    getOrderById: (id: string) => fetcher(`/orders/${id}`),
     updateStatus: (id: string, status: string) =>
       fetcher(`/orders/${id}`, {
         method: "PATCH",
@@ -144,7 +115,6 @@ export const api = {
 
   admin: {
     getAllUsers: () => fetcher("/admin/users"),
-
     updateOrderStatus: (id: string, status: string) =>
       fetcher(`/admin/orders/${id}`, {
         method: "PATCH",

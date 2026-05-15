@@ -3,252 +3,203 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
-  User, Mail, Phone, MapPin, ShieldCheck, 
-  Edit3, Save, BadgeCheck, X 
+  User, Mail, Phone, MapPin, Edit3, Save, BadgeCheck, X, Loader2 
 } from "lucide-react";
-
-interface SellerData {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  joined: string;
-  role: string;
-  status: string;
-  totalSales: string;
-  rating: string;
-}
+import { api } from "@/lib/api"; 
+import { toast } from "react-hot-toast";
 
 export default function SellerProfile() {
-  // সেশন স্ট্যাটাস ম্যানুয়ালি হ্যান্ডেল করার জন্য
   const [loading, setLoading] = useState(true);
-  const [sellerInfo, setSellerInfo] = useState<SellerData>({
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const [sellerInfo, setSellerInfo] = useState({
     name: "",
     email: "",
-    phone: "Not provided",
-    address: "Not provided",
-    joined: "2026",
-    role: "Seller",
-    status: "Verified",
-    totalSales: "৳0",
-    rating: "N/A",
+    phone: "",
+    address: "",
+    role: "Seller"
   });
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempData, setTempData] = useState<SellerData>({ ...sellerInfo });
+  const [tempData, setTempData] = useState({ ...sellerInfo });
 
-  // পেজ লোড হলে ডাটাবেস (Backend API) থেকে ডাটা নিয়ে আসা
+  // ✅ ডাটাবেস থেকে অরিজিনাল রেজিস্ট্রেশন ডেটা আনা
   useEffect(() => {
-    const fetchProfile = async () => {
+    const loadProfileData = async () => {
       try {
-        const token = localStorage.getItem("token"); // আপনার সিস্টেম অনুযায়ী টোকেন কি দিন
-        const response = await fetch("/api/user/profile", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
+        setLoading(true);
+        // api.ts থেকে getMe মেথড কল করা হচ্ছে
+        const response = await api.auth.getMe(); 
         
-        if (response.ok) {
-          const data = await response.json();
-          const updatedInfo = {
-            ...sellerInfo,
-            name: data.name,
-            email: data.email,
-            role: data.role || "Seller",
+        // ব্যাকএন্ড যদি সরাসরি ডেটা পাঠায় অথবা .data এর ভেতর পাঠায়
+        const user = response?.data || response;
+
+        if (user) {
+          const fetchedData = {
+            name: user.name || "MediStore User", // রেজিস্ট্রেশনের নাম
+            email: user.email || "",             // রেজিস্ট্রেশনের ইমেইল
+            phone: user.phone || "Not set yet",
+            address: user.address || "Not set yet",
+            role: user.role || "Seller"
           };
-          setSellerInfo(updatedInfo);
-          setTempData(updatedInfo);
+          setSellerInfo(fetchedData);
+          setTempData(fetchedData);
         }
-      } catch (error) {
-        console.error("Profile fetch failed:", error);
+      } catch (error: any) {
+        console.error("Profile Load Error:", error);
+        // টোকেন না থাকলে বা এরর হলে ইউজারকে জানানো
+        toast.error("সেশন শেষ হয়ে গেছে, আবার লগইন করুন।");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    loadProfileData();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setTempData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveClick = async () => {
-    // এখানে আপনার ডাটা আপডেট করার জন্য PATCH/PUT রিকোয়েস্ট পাঠাতে পারেন
-    setSellerInfo({ ...tempData });
-    setIsEditing(false);
-    alert("Profile Updated Successfully!");
+  const handleSave = async () => {
+    const toastId = toast.loading("তথ্য আপডেট হচ্ছে...");
+    try {
+      // এখানে আপনার এডিট করা ডেটা ব্যাকএন্ডে পাঠানোর জন্য PATCH রিকোয়েস্ট দিতে পারেন
+      // await api.user.updateProfile(tempData);
+      
+      setSellerInfo(tempData);
+      setIsEditing(false);
+      toast.success("প্রোফাইল আপডেট সফল হয়েছে!", { id: toastId });
+    } catch (error) {
+      toast.error("আপডেট করা সম্ভব হয়নি", { id: toastId });
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050a08] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-emerald-500"></div>
+      <div className="min-h-[400px] flex flex-col items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-600 mb-4" size={40} />
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Profile...</p>
       </div>
     );
   }
 
-  const firstLetter = sellerInfo.name ? sellerInfo.name.charAt(0).toUpperCase() : "S";
-
   return (
-    <div className="p-4 sm:p-6 lg:p-10 min-h-screen bg-[#050a08] text-slate-200">
-      
+    <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="max-w-6xl mx-auto mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-end mb-10">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white">
-            Seller <span className="text-emerald-500">Account</span>
+          <h1 className="text-4xl font-black italic uppercase text-indigo-950 tracking-tighter">
+            My <span className="text-indigo-600">Account</span>
           </h1>
-          <div className="h-1 w-12 bg-emerald-500 mt-1 rounded-full"></div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Registration Details</p>
         </div>
         
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          {!isEditing ? (
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg shadow-emerald-500/20"
-            >
-              <Edit3 size={16} /> Edit Profile
-            </button>
-          ) : (
-            <button 
-              onClick={() => setIsEditing(false)}
-              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-white/10 transition-all"
-            >
-              <X size={16} /> Cancel
-            </button>
-          )}
-        </div>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-indigo-900 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-800 transition-all shadow-lg shadow-indigo-900/20">
+            <Edit3 size={16} /> Edit Profile
+          </button>
+        ) : (
+          <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">
+            <X size={16} /> Cancel
+          </button>
+        )}
       </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Side (Avatar Card) */}
-        <div className="lg:col-span-4 space-y-6">
+      <div className="grid lg:grid-cols-12 gap-8">
+        {/* Avatar Card */}
+        <div className="lg:col-span-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#0a120f] border border-emerald-900/20 rounded-[40px] p-8 text-center relative shadow-2xl"
+            className="bg-white border border-slate-200 rounded-[40px] p-8 text-center shadow-sm h-fit sticky top-6"
           >
-            <div className="relative w-32 h-32 mx-auto mb-6">
-              <div className="w-full h-full rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-5xl font-black text-emerald-500 italic">
-                {firstLetter}
-              </div>
+            <div className="w-24 h-24 bg-indigo-50 border-2 border-indigo-100 rounded-[35%] mx-auto mb-4 flex items-center justify-center text-4xl font-black text-indigo-600 italic shadow-inner">
+              {sellerInfo.name?.charAt(0).toUpperCase()}
             </div>
-            
-            <h2 className="text-2xl font-black italic uppercase tracking-tight text-white mb-1 truncate">
-              {sellerInfo.name}
-            </h2>
-            
-            <div className="flex items-center justify-center gap-2 text-emerald-500/80 mb-6 font-bold uppercase text-[10px] tracking-[0.2em]">
-              <BadgeCheck size={14} /> {sellerInfo.role}
-            </div>
-
-            <div className="grid grid-cols-2 gap-px bg-emerald-900/10 border-t border-emerald-900/20 -mx-8 -mb-8">
-              <div className="p-6 text-center">
-                <p className="text-[8px] font-black uppercase text-emerald-700 tracking-widest mb-1">Total Sales</p>
-                <p className="text-xl font-black text-white italic">{sellerInfo.totalSales}</p>
-              </div>
-              <div className="p-6 border-l border-emerald-900/10 text-center">
-                <p className="text-[8px] font-black uppercase text-emerald-700 tracking-widest mb-1">Rating</p>
-                <p className="text-xl font-black text-white italic">{sellerInfo.rating}</p>
-              </div>
+            <h2 className="text-xl font-black text-indigo-950 uppercase italic tracking-tight truncate">{sellerInfo.name}</h2>
+            <div className="flex items-center justify-center gap-1.5 text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-full mt-3">
+              <BadgeCheck size={14} />
+              <span className="text-[9px] font-black uppercase tracking-widest">{sellerInfo.role}</span>
             </div>
           </motion.div>
-
-          <div className="bg-emerald-950/20 border border-emerald-900/20 rounded-[32px] p-6 space-y-5 shadow-inner">
-             <div className="flex items-center gap-4">
-                <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500"><ShieldCheck size={20}/></div>
-                <div>
-                  <p className="text-[8px] font-black text-emerald-800 uppercase tracking-[0.2em]">Status</p>
-                  <p className="text-sm font-bold text-emerald-500 uppercase italic">Verified Seller</p>
-                </div>
-             </div>
-          </div>
         </div>
 
-        {/* Right Side - Form */}
+        {/* Form Details */}
         <div className="lg:col-span-8">
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-[#0a120f] border border-emerald-900/20 rounded-[40px] p-6 md:p-10 shadow-2xl"
+            className="bg-white border border-slate-200 rounded-[40px] p-6 md:p-10 shadow-sm"
           >
-            <h3 className="text-xl font-black italic uppercase tracking-tight text-white mb-10 border-l-4 border-emerald-500 pl-4">
-              Profile <span className="text-emerald-500">Details</span>
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest ml-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-900" size={18} />
+            <div className="space-y-8">
+              {/* Name */}
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Full Name (Registered)</label>
+                <div className="relative mt-2 group">
+                  <User className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isEditing ? 'text-indigo-500' : 'text-slate-300'}`} size={18} />
                   <input 
-                    type="text" name="name"
+                    type="text"
+                    disabled={!isEditing}
                     value={isEditing ? tempData.name : sellerInfo.name}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full bg-[#050a08] border rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-white outline-none transition-all 
-                      ${isEditing ? 'border-emerald-500/40 focus:border-emerald-500' : 'border-white/5 opacity-50 cursor-not-allowed'}`}
+                    onChange={(e) => setTempData({...tempData, name: e.target.value})}
+                    className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:border-indigo-600 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
                   />
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest ml-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-900" size={18} />
+              {/* Email - Read Only */}
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Email Address (Locked)</label>
+                <div className="relative mt-2">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   <input 
-                    type="email" 
-                    value={sellerInfo.email}
+                    type="email"
                     disabled
-                    className="w-full bg-[#050a08] border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-white opacity-50 cursor-not-allowed"
+                    value={sellerInfo.email}
+                    className="w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold bg-slate-100 border-transparent text-slate-400 cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest ml-1">Phone</label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-900" size={18} />
-                  <input 
-                    type="text" name="phone"
-                    value={isEditing ? tempData.phone : sellerInfo.phone}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full bg-[#050a08] border rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-white outline-none transition-all 
-                      ${isEditing ? 'border-emerald-500/40 focus:border-emerald-500' : 'border-white/5 opacity-50 cursor-not-allowed'}`}
-                  />
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Phone */}
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Phone Number</label>
+                  <div className="relative mt-2">
+                    <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 ${isEditing ? 'text-indigo-500' : 'text-slate-300'}`} size={18} />
+                    <input 
+                      type="text"
+                      disabled={!isEditing}
+                      value={isEditing ? tempData.phone : sellerInfo.phone}
+                      onChange={(e) => setTempData({...tempData, phone: e.target.value})}
+                      className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:border-indigo-600 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Address</label>
+                  <div className="relative mt-2">
+                    <MapPin className={`absolute left-4 top-1/2 -translate-y-1/2 ${isEditing ? 'text-indigo-500' : 'text-slate-300'}`} size={18} />
+                    <input 
+                      type="text"
+                      disabled={!isEditing}
+                      value={isEditing ? tempData.address : sellerInfo.address}
+                      onChange={(e) => setTempData({...tempData, address: e.target.value})}
+                      className={`w-full py-4 pl-12 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${isEditing ? 'bg-white border border-indigo-200 focus:border-indigo-600 shadow-sm' : 'bg-slate-50 border-transparent text-slate-500'}`}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest ml-1">Address</label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-900" size={18} />
-                  <input 
-                    type="text" name="address"
-                    value={isEditing ? tempData.address : sellerInfo.address}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full bg-[#050a08] border rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-white outline-none transition-all 
-                      ${isEditing ? 'border-emerald-500/40 focus:border-emerald-500' : 'border-white/5 opacity-50 cursor-not-allowed'}`}
-                  />
-                </div>
-              </div>
+              {isEditing && (
+                <motion.button 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={handleSave}
+                  className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black uppercase text-[12px] tracking-[0.2em] shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
+                >
+                  <Save size={20} /> Update Account Info
+                </motion.button>
+              )}
             </div>
-
-            {isEditing && (
-              <motion.button 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={handleSaveClick}
-                className="w-full mt-12 bg-emerald-600 hover:bg-emerald-500 text-white py-5 rounded-3xl font-black uppercase text-[12px] tracking-[0.3em] transition-all flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20"
-              >
-                <Save size={20} /> Save Changes
-              </motion.button>
-            )}
           </motion.div>
         </div>
       </div>
