@@ -2,19 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Package, MapPin, Eye, XCircle, ChevronRight, Phone } from "lucide-react";
+import { Package, MapPin, Eye, XCircle, ChevronRight, Phone, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 
-// ১. ইন্টারফেস ফিক্স (ব্যাকএন্ডের সাথে মিল রেখে)
 interface Order {
   id: string;
   orderNumber: string;
   status: string;
-  totalAmount: number; // ব্যাকএন্ডে এই নামে আছে
+  totalAmount: number;
   shippingAddress: string;
-  shippingPhone: string; // নতুন যোগ করা হলো
+  shippingPhone: string;
   createdAt: string;
   items: any[];
 }
@@ -31,6 +30,7 @@ export default function OrdersPage() {
     setLoading(true);
     try {
       const res = await api.orders.getMyOrders();
+      // API রেসপন্স হ্যান্ডলিং ফিক্স
       setOrders(res.data || res || []);
     } catch (error: any) {
       toast.error("Failed to load orders");
@@ -42,7 +42,8 @@ export default function OrdersPage() {
   const handleCancelOrder = async (orderId: string) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     try {
-      await api.orders.updateStatus(orderId, "CANCELLED"); 
+      // ব্যাকএন্ড updateOrderStatus ফাংশন অনুযায়ী CANCELLED স্ট্যাটাস পুশ
+      await api.orders.updateStatus(orderId, { status: "CANCELLED" }); 
       toast.success("Order cancelled successfully");
       fetchOrders();
     } catch (error) {
@@ -50,14 +51,23 @@ export default function OrdersPage() {
     }
   };
 
+  // লাইট মোডের জন্য স্ট্যাটাস কালার প্যালেট
   const statusStyle = (status: string) => {
-    switch (status) {
-      case "PLACED": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      case "PROCESSING": return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
-      case "SHIPPED": return "bg-purple-500/10 text-purple-400 border-purple-500/20";
-      case "DELIVERED": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case "CANCELLED": return "bg-red-500/10 text-red-400 border-red-500/20";
-      default: return "bg-white/10 text-white/60 border-white/10";
+    const formattedStatus = status?.toUpperCase();
+    switch (formattedStatus) {
+      case "PENDING":
+      case "PLACED": 
+        return "bg-blue-50 text-blue-600 border-blue-100";
+      case "PROCESSING": 
+        return "bg-amber-50 text-amber-600 border-amber-100";
+      case "SHIPPED": 
+        return "bg-purple-50 text-purple-600 border-purple-100";
+      case "DELIVERED": 
+        return "bg-emerald-50 text-emerald-600 border-emerald-100";
+      case "CANCELLED": 
+        return "bg-rose-50 text-rose-600 border-rose-100";
+      default: 
+        return "bg-slate-50 text-slate-600 border-slate-100";
     }
   };
 
@@ -66,102 +76,106 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020d0a] flex items-center justify-center text-white italic font-black uppercase tracking-widest">
-        Loading <span className="text-emerald-500 ml-2 animate-pulse">Orders...</span>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
+        <Loader2 className="animate-spin text-emerald-600" size={18} /> Loading <span className="text-emerald-600">Orders...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#062d24,_#020d0a)] text-white p-6 lg:p-12">
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-12 font-sans">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-12">
+        
+        <div className="mb-10">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter"
+            className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tight"
           >
-            My <span className="text-emerald-500">Orders</span>
+            My <span className="text-emerald-600">Orders</span>
           </motion.h1>
-          <p className="text-emerald-500/40 text-[10px] font-black uppercase tracking-[0.3em] mt-3">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">
             Track and manage your recent medicine purchases
           </p>
         </div>
 
         {orders.length === 0 ? (
-          <div className="bg-white/[0.02] border border-white/5 rounded-[40px] p-24 text-center">
-            <Package className="mx-auto mb-6 text-emerald-500/20" size={60} />
-            <p className="text-slate-500 uppercase font-black text-[10px] tracking-[0.4em]">No orders found yet</p>
-            <Link href="/shop" className="mt-8 inline-block bg-emerald-600 px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest hover:bg-emerald-500 transition-all">
+          <div className="bg-white border border-slate-200 rounded-[32px] p-16 md:p-24 text-center shadow-sm">
+            <Package className="mx-auto mb-4 text-slate-300" size={56} />
+            <p className="text-slate-400 uppercase font-black text-[10px] tracking-widest">No orders found yet</p>
+            <Link href="/customer/shop" className="mt-6 inline-block bg-emerald-600 text-white px-8 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md shadow-emerald-50">
               Start Shopping
             </Link>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {orders.map((order, index) => (
               <motion.div
                 key={order.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[35px] p-8 group relative overflow-hidden transition-all hover:border-emerald-500/30 shadow-2xl"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white border border-slate-200 rounded-[24px] p-6 md:p-8 group relative overflow-hidden shadow-sm hover:shadow-md transition-all hover:border-slate-300"
               >
-                <div className="absolute -top-4 -left-2 text-white/[0.03] text-8xl font-black italic pointer-events-none">
+                {/* ব্যাকগ্রাউন্ড ওয়াটারমার্ক ইনডেক্স */}
+                <div className="absolute -top-3 -left-1 text-slate-50 text-7xl font-black italic pointer-events-none select-none group-hover:text-slate-100/70 transition-colors">
                   {index + 1}
                 </div>
 
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8 relative z-10">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 relative z-10">
                   <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-[10px] font-black px-2 py-1 bg-emerald-500 text-black uppercase rounded">Order #{index + 1}</span>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{formatDate(order.createdAt)}</span>
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <span className="text-[9px] font-black px-2 py-0.5 bg-slate-900 text-white uppercase rounded">Order #{index + 1}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{formatDate(order.createdAt)}</span>
                     </div>
-                    <h3 className="text-2xl font-black italic tracking-tight">Ref: {order.orderNumber}</h3>
+                    <h3 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">Ref: {order.orderNumber}</h3>
                   </div>
 
-                  <div className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-xl ${statusStyle(order.status)}`}>
-                    {order.status}
+                  <div className={`sm:self-center self-start px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border shadow-sm ${statusStyle(order.status)}`}>
+                    {order.status || "PENDING"}
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-8 border-y border-white/5 py-8 mb-8 relative z-10">
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Shipping & Contact</p>
-                    <p className="text-xs font-bold text-slate-300 flex items-start gap-2">
-                      <MapPin size={14} className="text-emerald-500 shrink-0" /> {order.shippingAddress}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-y border-slate-100 py-6 mb-6 relative z-10">
+                  <div className="space-y-1.5">
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Shipping & Contact</p>
+                    <p className="text-xs font-bold text-slate-600 flex items-start gap-2 leading-relaxed">
+                      <MapPin size={14} className="text-emerald-600 shrink-0 mt-0.5" /> {order.shippingAddress}
                     </p>
-                    <p className="text-[11px] font-black text-emerald-500/60 flex items-center gap-2 mt-2">
-                      <Phone size={12} /> {order.shippingPhone || "No contact info"}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Total Payable</p>
-                    <p className="text-4xl font-black text-white italic">
-                        ৳{order.totalAmount || 0}
+                    <p className="text-xs font-bold text-slate-500 flex items-center gap-2 pt-1">
+                      <Phone size={12} className="text-slate-400" /> {order.shippingPhone || "No contact info"}
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Package Details</p>
-                    <p className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                      <Package size={14} className="text-emerald-500" /> {order.items?.length || 0} Medicines
+                  
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Total Payable</p>
+                    <p className="text-3xl font-black text-slate-900 tracking-tight">
+                       ৳{order.totalAmount || 0}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Package Details</p>
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                      <Package size={14} className="text-emerald-600" /> {order.items?.length || 0} Medicines
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 relative z-10">
+                <div className="flex flex-col sm:flex-row items-center gap-3 relative z-10">
                   <Link
                     href={`/customer/orders/${order.id}`}
-                    className="flex-1 md:flex-none inline-flex items-center justify-center gap-3 bg-white/5 hover:bg-emerald-600 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all group/btn"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-900 border border-slate-200 hover:border-slate-900 text-slate-700 hover:text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all group/btn shadow-sm"
                   >
-                    <Eye size={16} /> View Details <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                    <Eye size={14} /> View Details <ChevronRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
 
-                  {order.status === "PLACED" && (
+                  {(order.status === "PENDING" || order.status === "PLACED") && (
                     <button
                       onClick={() => handleCancelOrder(order.id)}
-                      className="flex-1 md:flex-none inline-flex items-center justify-center gap-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-rose-600 text-rose-600 hover:text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm"
                     >
-                      <XCircle size={16} /> Cancel Order
+                      <XCircle size={14} /> Cancel Order
                     </button>
                   )}
                 </div>
