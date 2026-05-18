@@ -177,15 +177,19 @@ export default function OrderDetails() {
             {order.status === "PLACED" && (
               <button 
                 className="w-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-black uppercase italic py-5 rounded-[25px] transition-all border border-red-500/20"
-                onClick={() => {
-                  if(confirm("Are you sure you want to cancel this order?")) {
-                    api.orders.updateStatus(order.id, "CANCELLED")
-                      .then(() => {
-                        toast.success("Order Cancelled");
-                        fetchOrderDetails();
-                      });
-                  }
-                }}
+               onClick={() => {
+  if(confirm("Are you sure you want to cancel this order?")) {
+    // 💡 এখানে "CANCELLED" এর জায়গায় অবজেক্ট { status: "CANCELLED" } পাস করা হয়েছে
+    api.orders.updateStatus(order.id, { status: "CANCELLED" })
+      .then(() => {
+        toast.success("Order Cancelled");
+        fetchOrderDetails();
+      })
+      .catch((error) => {
+        toast.error(error?.message || "Something went wrong");
+      });
+  }
+}}
               >
                 Cancel Order
               </button>
