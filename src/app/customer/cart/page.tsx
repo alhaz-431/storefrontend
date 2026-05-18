@@ -5,60 +5,105 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShoppingBag, Trash2, Plus, Minus, 
-  ArrowRight, ChevronLeft, ShieldCheck 
+  ArrowRight, ChevronLeft, ShieldCheck, Loader2
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<any[]>([]);
+  const [cartKey, setCartKey] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem("medistore_cart");
+    // ১. লগইন থাকা ইউজারের ইনফো নেওয়া হচ্ছে
+    const userStr = localStorage.getItem("medistore_user");
+    let storageKey = "medistore_cart_guest"; // ব্যাকআপ হিসেবে যদি ইউজার লগইন না থাকে
+
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user && (user.id || user._id)) {
+          // ইউনিক আইডি দিয়ে আলাদা কার্ট কী (Key) তৈরি করা হলো
+          storageKey = `medistore_cart_${user.id || user._id}`;
+        }
+      } catch (e) {
+        console.error("Error parsing user data", e);
+      }
+    }
+
+    setCartKey(storageKey);
+
+    // ২. শুধু এই ইউজারের জন্য সংরক্ষিত কার্ট লোড হবে
+    const savedCart = localStorage.getItem(storageKey);
     if (savedCart) {
       setCart(JSON.parse(savedCart));
+    } else {
+      setCart([]); // কোনো ডাটা না থাকলে খালি দেখাবে
     }
+    setLoading(false);
   }, []);
 
   const updateLocalStorage = (updatedCart: any[]) => {
     setCart(updatedCart);
-    localStorage.setItem("medistore_cart", JSON.stringify(updatedCart));
+    if (cartKey) {
+      localStorage.setItem(cartKey, JSON.stringify(updatedCart));
+    }
   };
 
   const incrementQty = (id: string) => {
-    const updated = cart.map(item => 
-      item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-    );
+    const updated = cart.map(item => {
+      if (item.id === id || item.medicineId === id) {
+        const currentQty = Number(item.quantity || 1);
+        return { ...item, quantity: isNaN(currentQty) ? 1 : currentQty + 1 };
+      }
+      return item;
+    });
     updateLocalStorage(updated);
   };
 
   const decrementQty = (id: string) => {
-    const updated = cart.map(item => 
-      item.id === id && item.quantity > 1 
-        ? { ...item, quantity: item.quantity - 1 } 
-        : item
-    );
+    const updated = cart.map(item => {
+      if ((item.id === id || item.medicineId === id) && item.quantity > 1) {
+        const currentQty = Number(item.quantity);
+        return { ...item, quantity: isNaN(currentQty) ? 1 : currentQty - 1 };
+      }
+      return item;
+    });
     updateLocalStorage(updated);
   };
 
   const removeItem = (id: string) => {
-    const updated = cart.filter(item => item.id !== id);
+    const updated = cart.filter(item => item.id !== id && item.medicineId !== id);
     updateLocalStorage(updated);
     toast.success("Item removed from cart");
   };
 
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  // Safe Math calculation to completely avoid NaN
+  const subtotal = cart.reduce((acc, item) => {
+    const price = Number(item.price || 0);
+    const qty = Number(item.quantity || 0);
+    return acc + (isNaN(price * qty) ? 0 : price * qty);
+  }, 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
+        <Loader2 className="animate-spin text-emerald-600" size={18} /> Syncing your cart...
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#061a14] flex flex-col items-center justify-center p-4 text-center">
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-          <ShoppingBag size={100} className="text-emerald-500/20 mb-6" />
-          <h2 className="text-3xl font-bold text-white mb-2">Your cart is empty</h2>
-          <p className="text-emerald-200/50 mb-8">Looks like you haven't added any medicines yet.</p>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-center font-sans">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+          <ShoppingBag size={72} className="text-slate-300 mb-5 mx-auto animate-bounce" />
+          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Your cart is empty</h2>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 mb-6">Looks like you haven't added any medicines yet.</p>
           <button 
-            onClick={() => router.push("/shop")}
-            className="bg-emerald-500 text-[#061a14] px-8 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-colors"
+            onClick={() => router.push("/customer/shop")}
+            className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
           >
             Start Shopping
           </button>
@@ -68,113 +113,122 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#061a14] text-slate-100 py-12">
+    <div className="min-h-screen bg-slate-50 text-slate-900 py-8 sm:py-12 font-sans">
       <div className="container mx-auto px-4 max-w-5xl">
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
-            <button onClick={() => router.back()} className="flex items-center gap-2 text-emerald-300/60 hover:text-emerald-400 transition-colors mb-2 text-sm">
-              <ChevronLeft size={16} /> Continue Shopping
+            <button onClick={() => router.back()} className="flex items-center gap-1.5 text-slate-400 hover:text-slate-900 transition-colors mb-2 text-[10px] font-black uppercase tracking-wider">
+              <ChevronLeft size={14} /> Continue Shopping
             </button>
-            <h1 className="text-4xl font-black text-white">Shopping <span className="text-emerald-500">Cart</span></h1>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight">Shopping <span className="text-emerald-600">Cart</span></h1>
           </div>
-          <div className="text-right">
-            <p className="text-emerald-300/50 text-sm">Items in Cart</p>
-            <p className="text-2xl font-bold text-emerald-500">{cart.length}</p>
+          <div className="sm:text-right self-start sm:self-auto bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-wider">Items in Cart</p>
+            <p className="text-xl font-black text-emerald-600">{cart.length}</p>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-12 gap-8">
           {/* Cart Items List */}
-          <div className="lg:col-span-2 space-y-4">
-            <AnimatePresence>
-              {cart.map((item) => (
-                <motion.div 
-                  key={item.id}
-                  layout
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 20, opacity: 0 }}
-                  className="bg-white/5 border border-white/10 hover:border-emerald-500/30 p-5 rounded-3xl flex items-center gap-5 transition-all group backdrop-blur-sm"
-                >
-                  {/* Image Container */}
-                  <div className="w-24 h-24 bg-emerald-950/50 rounded-2xl flex-shrink-0 overflow-hidden border border-white/5">
-                    <img 
-                      src={`/img/${item.image}`} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/150?text=Medicine";
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold text-white truncate">{item.name}</h3>
-                    <p className="text-emerald-400 font-bold text-lg">৳{item.price}</p>
-                  </div>
+          <div className="lg:col-span-8 space-y-4">
+            <AnimatePresence mode="popLayout">
+              {cart.map((item, index) => {
+                const itemPrice = Number(item.price || 0);
+                const itemQty = Number(item.quantity || 1);
+                const itemSubtotal = itemPrice * itemQty;
 
-                  {/* Quantity Selector */}
-                  <div className="flex items-center bg-[#0d2b23] rounded-2xl p-1.5 border border-white/5">
-                    <button onClick={() => decrementQty(item.id)} className="p-2 hover:bg-emerald-500 hover:text-white rounded-xl transition-all">
-                      <Minus size={16} />
-                    </button>
-                    <span className="w-10 text-center font-black text-white">{item.quantity}</span>
-                    <button onClick={() => incrementQty(item.id)} className="p-2 hover:bg-emerald-500 hover:text-white rounded-xl transition-all">
-                      <Plus size={16} />
-                    </button>
-                  </div>
-
-                  {/* Total per Item */}
-                  <div className="text-right min-w-[90px]">
-                    <p className="font-black text-white text-lg font-mono">৳{item.price * item.quantity}</p>
-                  </div>
-
-                  {/* Delete Button */}
-                  <button 
-                    onClick={() => removeItem(item.id)}
-                    className="p-3 text-emerald-900 bg-red-500/10 hover:bg-red-500 hover:text-white rounded-2xl transition-all"
+                return (
+                  <motion.div 
+                    key={item.id || item.medicineId || index}
+                    layout
+                    initial={{ y: 15, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ x: -30, opacity: 0 }}
+                    className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all group"
                   >
-                    <Trash2 size={20} />
-                  </button>
-                </motion.div>
-              ))}
+                    <div className="flex items-center gap-4">
+                      {/* Image container handles local or error fallbacks */}
+                      <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center text-xl shadow-inner">
+                        💊
+                      </div>
+                      
+                      <div className="min-w-0">
+                        <h3 className="font-black text-slate-900 uppercase text-sm md:text-base truncate">{item.name || "Medicine"}</h3>
+                        <p className="text-slate-400 text-xs font-bold mt-0.5">৳{itemPrice} / piece</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto">
+                      {/* Quantity Controls */}
+                      <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-inner">
+                        <button 
+                          onClick={() => decrementQty(item.id || item.medicineId)} 
+                          className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg text-slate-500 transition-colors"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="w-10 text-center font-black text-sm text-slate-800">{itemQty}</span>
+                        <button 
+                          onClick={() => incrementQty(item.id || item.medicineId)} 
+                          className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg text-slate-500 transition-colors"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+
+                      {/* Line Total */}
+                      <div className="text-right min-w-[70px]">
+                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Subtotal</p>
+                        <p className="font-black text-slate-900 text-sm md:text-base">৳{isNaN(itemSubtotal) ? 0 : itemSubtotal}</p>
+                      </div>
+
+                      {/* Delete */}
+                      <button 
+                        onClick={() => removeItem(item.id || item.medicineId)}
+                        className="text-slate-300 hover:text-rose-500 transition-colors p-2"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-[#0a241d] border border-emerald-500/20 rounded-[40px] p-8 sticky top-6 shadow-2xl shadow-black/50">
-              <h2 className="text-2xl font-black text-white mb-8 tracking-tight">Summary</h2>
+          {/* Order Summary Panel */}
+          <div className="lg:col-span-4">
+            <div className="bg-white border border-slate-200 rounded-[24px] p-6 sticky top-6 shadow-sm space-y-6">
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight pb-3 border-b border-slate-100">Bill Details</h2>
               
-              <div className="space-y-5 mb-10">
-                <div className="flex justify-between text-emerald-100/60 font-medium">
-                  <span>Subtotal</span>
-                  <span className="text-white">৳{subtotal.toFixed(2)}</span>
+              <div className="space-y-4">
+                <div className="flex justify-between text-sm">
+                  <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Items Cost</span>
+                  <span className="font-black text-slate-800">৳{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-100/60 font-medium">
-                  <span>Delivery Fee</span>
-                  <span className="text-emerald-400">FREE</span>
+                <div className="flex justify-between text-sm">
+                  <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Delivery Fee</span>
+                  <span className="font-black text-emerald-600 uppercase text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">FREE</span>
                 </div>
-                <div className="h-px bg-emerald-500/10 w-full" />
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-white font-bold text-lg">Total</span>
-                  <span className="text-4xl font-black text-emerald-500 drop-shadow-lg font-mono">৳{subtotal.toFixed(2)}</span>
+                <div className="h-[1px] bg-slate-100 w-full" />
+                <div className="flex justify-between items-end pt-2">
+                  <span className="font-black text-emerald-600 uppercase text-[10px] tracking-wider mb-0.5">Total Payable</span>
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">৳{subtotal.toFixed(2)}</span>
                 </div>
               </div>
 
               <button 
                 onClick={() => router.push("/customer/checkout")}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-[#061a14] py-5 rounded-3xl font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-xl shadow-emerald-500/20 uppercase tracking-widest text-sm"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-50 uppercase tracking-widest text-xs"
               >
                 Checkout Now
-                <ArrowRight size={20} />
+                <ArrowRight size={14} />
               </button>
 
-              <div className="mt-8 flex items-center justify-center gap-2 text-[10px] text-emerald-300/40 font-black uppercase tracking-[3px]">
-                <ShieldCheck size={14} className="text-emerald-500" /> Secure Payment
+              <div className="flex items-center justify-center gap-2 text-[9px] text-slate-400 font-black uppercase tracking-wider pt-2">
+                <ShieldCheck size={14} className="text-emerald-600" /> Secure 256-Bit SSL Connection
               </div>
             </div>
           </div>
