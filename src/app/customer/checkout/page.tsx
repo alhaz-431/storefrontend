@@ -136,11 +136,14 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Full Delivery Address</label>
+                <label className="text-[10px] font-black uppercase
+                 text-slate-400 tracking-widest ml-1">Full Delivery Address</label>
                 <textarea 
                   value={shippingAddress}
                   onChange={(e) => setShippingAddress(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white transition-all min-h-[120px] shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl
+                   py-4 px-5 text-sm font-bold text-slate-800 outline-none
+                    focus:border-emerald-500 focus:bg-white transition-all min-h-[120px] shadow-inner"
                   placeholder="Street name, House, Area, City..."
                 />
               </div>
@@ -175,7 +178,8 @@ export default function CheckoutPage() {
                </div>
                <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Shipping Fee</span>
-                  <span className="text-sm font-black text-emerald-600 uppercase bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">Free</span>
+                  <span className="text-sm font-black text-emerald-600 uppercase
+                   bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">Free</span>
                </div>
                <div className="h-[1px] w-full bg-slate-100" />
                <div className="flex justify-between items-end pt-2">
@@ -187,7 +191,8 @@ export default function CheckoutPage() {
             <button
               onClick={handlePlaceOrder}
               disabled={loading}
-              className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 shadow-lg ${
+              className={`w-full py-5 rounded-2xl font-black
+                 uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 shadow-lg ${
                 loading 
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
                   : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100 active:scale-95"
