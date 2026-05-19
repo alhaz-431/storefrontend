@@ -16,15 +16,22 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ১. লগইন থাকা ইউজারের ইনফো নেওয়া হচ্ছে
+    // ১. লগইন থাকা ইউজারের ইনফো নেওয়া হচ্ছে
     const userStr = localStorage.getItem("medistore_user");
-    let storageKey = "medistore_cart_guest"; // ব্যাকআপ হিসেবে যদি ইউজার লগইন না থাকে
+    let storageKey = "medistore_cart_guest"; 
 
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
+
+        // 🛡️ ডিফেন্সিভ গার্ড: যদি কোনোভাবে কোনো সেলার এই পেজে চলে আসে, তাকে সেলার কার্টেই পুশ করে দেবে
+        if (user && user.role === "Seller") {
+          router.replace("/seller/dashboard/cart"); // আপনার সেলার কার্ট রাউট অনুসারে চেঞ্জ করতে পারেন
+          return;
+        }
+
         if (user && (user.id || user._id)) {
-          // ইউনিক আইডি দিয়ে আলাদা কার্ট কী (Key) তৈরি করা হলো
+          // কাস্টমারের ইউনিক আইডি দিয়ে আলাদা কার্ট কী (Key)
           storageKey = `medistore_cart_${user.id || user._id}`;
         }
       } catch (e) {
@@ -34,15 +41,15 @@ export default function CartPage() {
 
     setCartKey(storageKey);
 
-    // ২. শুধু এই ইউজারের জন্য সংরক্ষিত কার্ট লোড হবে
+    // ২. শুধু এই কাস্টমারের জন্য সংরক্ষিত কার্ট লোড হবে
     const savedCart = localStorage.getItem(storageKey);
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     } else {
-      setCart([]); // কোনো ডাটা না থাকলে খালি দেখাবে
+      setCart([]); 
     }
     setLoading(false);
-  }, []);
+  }, [router]);
 
   const updateLocalStorage = (updatedCart: any[]) => {
     setCart(updatedCart);
@@ -79,7 +86,6 @@ export default function CartPage() {
     toast.success("Item removed from cart");
   };
 
-  // Safe Math calculation to completely avoid NaN
   const subtotal = cart.reduce((acc, item) => {
     const price = Number(item.price || 0);
     const qty = Number(item.quantity || 0);
@@ -149,7 +155,6 @@ export default function CartPage() {
                     className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all group"
                   >
                     <div className="flex items-center gap-4">
-                      {/* Image container handles local or error fallbacks */}
                       <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center text-xl shadow-inner">
                         💊
                       </div>

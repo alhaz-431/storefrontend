@@ -20,32 +20,23 @@ export default function SellerCartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartKey, setCartKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>("Customer"); // 👈 ইউজার রোল ট্র্যাক করার জন্য স্টেট
   const router = useRouter();
   
   const freeShippingThreshold = 1000; 
 
   useEffect(() => {
-    const userStr = localStorage.getItem("medistore_user");
-    let storageKey = "medistore_customer_cart_guest";
+    const sellerStr = localStorage.getItem("medistore_user");
+    let storageKey = "medistore_seller_cart_guest";
 
-    if (userStr) {
+    if (sellerStr) {
       try {
-        const user = JSON.parse(userStr);
-        
-        // 👈 ইউজারের রোল সেট করা হচ্ছে (Customer নাকি Seller)
-        if (user && user.role) {
-          setUserRole(user.role);
-        }
-
-        if (user && (user.id || user._id)) {
-          // রোল অনুযায়ী আলাদা আলাদা কার্ট কী (Key) তৈরি করা হচ্ছে যেন ডাটা মিক্সড না হয়
-          storageKey = user.role === "Seller" 
-            ? `medistore_seller_cart_${user.id || user._id}`
-            : `medistore_cart_${user.id || user._id}`;
+        const seller = JSON.parse(sellerStr);
+        // শুধুমাত্র সেলারের আইডি দিয়েই ইউনিক কার্ট কী তৈরি হবে
+        if (seller && (seller.id || seller._id)) {
+          storageKey = `medistore_seller_cart_${seller.id || seller._id}`;
         }
       } catch (e) {
-        console.error("Error parsing user data", e);
+        console.error("Error parsing seller data", e);
       }
     }
 
@@ -89,25 +80,25 @@ export default function SellerCartPage() {
   const removeItem = (medicineId: string) => {
     const newCart = cart.filter((item) => item.medicineId !== medicineId && item.id !== medicineId);
     updateCart(newCart);
-    toast.success("Item removed from cart");
+    toast.success("Item removed from seller cart");
   };
 
   const clearCart = () => {
-    if (confirm("Are you sure you want to clear this cart?")) {
+    if (confirm("Are you sure you want to clear this order cart?")) {
       updateCart([]);
-      toast.success("Cart cleared");
+      toast.success("Seller cart cleared");
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#020d0a] flex items-center justify-center text-emerald-500 font-black text-xs uppercase tracking-widest gap-2">
-        <Loader2 className="animate-spin text-emerald-500" size={18} /> Syncing Cart Panel...
+        <Loader2 className="animate-spin text-emerald-500" size={18} /> Syncing Seller Panel...
       </div>
     );
   }
 
-  // 🛠️ কার্ট খালি থাকলে রোল অনুযায়ী কন্ডিশনাল রেন্ডারিং
+  // 📦 সেলারের কার্ট খালি থাকলে যা দেখাবে
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-[#020d0a] bg-gradient-to-br from-[#020d0a] via-[#051a14] to-[#10b981]/5 flex items-center justify-center p-4">
@@ -120,24 +111,15 @@ export default function SellerCartPage() {
             📦
           </motion.div>
           <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase mb-8 tracking-tighter">
-            Your Cart is <span className="text-emerald-500">Empty</span>
+            No Items <span className="text-emerald-500">Selected</span>
           </h2>
           <p className="text-emerald-500/50 text-xs font-bold uppercase tracking-widest mb-8">
-            {userRole === "Seller" 
-              ? "Add medicines to create an order for a customer." 
-              : "Looks like you haven't added any medicines to your cart yet."}
+            Add medicines to create an order for a customer.
           </p>
           
-          {/* 📢 রোল অনুযায়ী বাটন ও সঠিক রাউট ডাইনামিক করা হলো */}
-          {userRole === "Seller" ? (
-            <Link href="/seller/dashboard" className="bg-emerald-500 text-black px-12 py-5 rounded-2xl font-black uppercase italic text-xs hover:scale-110 transition-all inline-block shadow-2xl shadow-emerald-500/20">
-              Go to Stock / Inventory
-            </Link>
-          ) : (
-            <Link href="/customer/shop" className="bg-emerald-500 text-black px-12 py-5 rounded-2xl font-black uppercase italic text-xs hover:scale-110 transition-all inline-block shadow-2xl shadow-emerald-500/20">
-              Start Shopping
-            </Link>
-          )}
+          <Link href="/seller/dashboard" className="bg-emerald-500 text-black px-12 py-5 rounded-2xl font-black uppercase italic text-xs hover:scale-110 transition-all inline-block shadow-2xl shadow-emerald-500/20">
+            Go to Stock / Inventory
+          </Link>
         </div>
       </div>
     );
@@ -159,7 +141,7 @@ export default function SellerCartPage() {
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">Order Threshold</p>
                 <h4 className="text-sm font-black italic uppercase">
-                  {total >= freeShippingThreshold ? "Free Delivery Unlocked!" : `Add ৳${freeShippingThreshold - total} more for Free Shipping`}
+                  {total >= freeShippingThreshold ? "Free Delivery Unlocked for Customer!" : `Add ৳${freeShippingThreshold - total} more for Free Shipping`}
                 </h4>
               </div>
             </div>
@@ -179,7 +161,7 @@ export default function SellerCartPage() {
               ORDER <span className="text-emerald-500">ITEMS</span>
             </h1>
             <p className="text-emerald-500/30 font-black uppercase text-[10px] tracking-[0.4em] flex items-center gap-2">
-               <ShieldCheck size={14} /> {userRole === "Seller" ? "Seller Desk Control" : "Customer Secure Cart"}
+               <ShieldCheck size={14} /> Seller Desk Control
             </p>
           </div>
           <button onClick={clearCart} className="text-red-500/40 hover:text-red-500 font-black uppercase text-[10px] tracking-widest transition-all pb-4 border-b border-transparent hover:border-red-500">
@@ -222,11 +204,9 @@ export default function SellerCartPage() {
                             <Plus size={20} />
                           </button>
                         </div>
-                        {userRole === "Seller" && (
-                          <div className="text-[10px] font-black text-white/10 uppercase tracking-[0.2em]">
-                            Current Stock: {item.stock}
-                          </div>
-                        )}
+                        <div className="text-[10px] font-black text-white/10 uppercase tracking-[0.2em]">
+                          Current Stock: {item.stock}
+                        </div>
                       </div>
                     </div>
 
@@ -274,12 +254,12 @@ export default function SellerCartPage() {
                 </div>
               </div>
 
-              {/* 📢 চেকআউট রাউটও কাস্টমার ও সেলারের জন্য আলাদা করে দেওয়া হলো */}
+              {/* 🧾 পিওর সেলার ইনভয়েস চেকআউট রাউট */}
               <button
-                onClick={() => router.push(userRole === "Seller" ? '/seller/dashboard/checkout' : '/customer/checkout')}
+                onClick={() => router.push('/seller/dashboard/checkout')}
                 className="w-full bg-emerald-500 text-black py-8 rounded-[30px] font-black uppercase italic text-sm tracking-[0.2em] transition-all flex items-center justify-center gap-4 shadow-2xl shadow-emerald-500/20 hover:bg-white hover:scale-[1.02] active:scale-95 group"
               >
-                {userRole === "Seller" ? "PROCEED TO INVOICE" : "PROCEED TO CHECKOUT"} 
+                PROCEED TO INVOICE 
                 <ArrowRight size={22} className="group-hover:translate-x-3 transition-transform" />
               </button>
             </div>
@@ -294,10 +274,10 @@ export default function SellerCartPage() {
           <p className="text-3xl font-black italic text-emerald-500">৳{total >= freeShippingThreshold ? total : total + 60}</p>
         </div>
         <button 
-          onClick={() => router.push(userRole === "Seller" ? '/seller/dashboard/checkout' : '/customer/checkout')} 
+          onClick={() => router.push('/seller/dashboard/checkout')} 
           className="bg-emerald-500 text-black px-10 py-5 rounded-2xl font-black uppercase italic text-xs tracking-widest shadow-xl shadow-emerald-500/20"
         >
-          {userRole === "Seller" ? "Invoice" : "Checkout"}
+          Invoice
         </button>
       </div>
     </div>
