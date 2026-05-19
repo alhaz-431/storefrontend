@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Plus, Minus, ArrowRight, Truck, ShieldCheck, Loader2 } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, Truck, ShieldCheck, Loader2, ShoppingBag } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,35 +16,23 @@ interface CartItem {
   stock: number;
 }
 
-export default function SellerCartPage() {
+export default function CartPage() {
+  // 🛒 গ্লোবাল কার্ট স্টেট (কাস্টমার ও পাবলিক সবার জন্য)
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [cartKey, setCartKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   
   const freeShippingThreshold = 1000; 
 
   useEffect(() => {
-    const sellerStr = localStorage.getItem("medistore_user");
-    let storageKey = "medistore_seller_cart_guest";
-
-    if (sellerStr) {
-      try {
-        const seller = JSON.parse(sellerStr);
-        // শুধুমাত্র সেলারের আইডি দিয়েই ইউনিক কার্ট কী তৈরি হবে
-        if (seller && (seller.id || seller._id)) {
-          storageKey = `medistore_seller_cart_${seller.id || seller._id}`;
-        }
-      } catch (e) {
-        console.error("Error parsing seller data", e);
-      }
-    }
-
-    setCartKey(storageKey);
-
-    const savedCart = localStorage.getItem(storageKey);
+    // 🎯 মেইন জেনারেল কার্ট কী থেকে ডেটা রিড করা হচ্ছে
+    const savedCart = localStorage.getItem("medistore_cart");
     if (savedCart) {
-      setCart(JSON.parse(savedCart));
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {
+        console.error("Cart parsing error", e);
+      }
     }
     setLoading(false);
   }, []);
@@ -59,14 +47,15 @@ export default function SellerCartPage() {
 
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);
-    if (cartKey) {
-      localStorage.setItem(cartKey, JSON.stringify(newCart));
-    }
+    localStorage.setItem("medistore_cart", JSON.stringify(newCart));
+    // ন্যাভবারকে ইনস্ট্যান্ট কাউন্ট আপডেট করার জন্য ইভেন্ট ফায়ার করা
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
   const updateQuantity = (medicineId: string, delta: number) => {
     const newCart = cart.map((item) => {
-      if (item.medicineId === medicineId || item.id === medicineId) {
+      const itemId = item.medicineId || item.id;
+      if (itemId === medicineId) {
         const currentQty = Number(item.quantity || 1);
         const stockLimit = Number(item.stock || 999);
         const newQty = Math.max(1, Math.min(stockLimit, currentQty + delta));
@@ -78,47 +67,47 @@ export default function SellerCartPage() {
   };
 
   const removeItem = (medicineId: string) => {
-    const newCart = cart.filter((item) => item.medicineId !== medicineId && item.id !== medicineId);
+    const newCart = cart.filter((item) => (item.medicineId || item.id) !== medicineId);
     updateCart(newCart);
-    toast.success("Item removed from seller cart");
+    toast.success("Item removed from cart");
   };
 
   const clearCart = () => {
-    if (confirm("Are you sure you want to clear this order cart?")) {
+    if (confirm("Are you sure you want to clear your cart?")) {
       updateCart([]);
-      toast.success("Seller cart cleared");
+      toast.success("Cart cleared");
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020d0a] flex items-center justify-center text-emerald-500 font-black text-xs uppercase tracking-widest gap-2">
-        <Loader2 className="animate-spin text-emerald-500" size={18} /> Syncing Seller Panel...
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
+        <Loader2 className="animate-spin text-emerald-600" size={18} /> Loading Secure Cart...
       </div>
     );
   }
 
-  // 📦 সেলারের কার্ট খালি থাকলে যা দেখাবে
+  // 📦 ১. কার্ট খালি থাকলে যা দেখাবে (সেলার ড্যাশবোর্ডের বদলে শপ পেজে পাঠাবে)
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#020d0a] bg-gradient-to-br from-[#020d0a] via-[#051a14] to-[#10b981]/5 flex items-center justify-center p-4">
-        <div className="text-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
           <motion.div 
-            animate={{ y: [0, -15, 0] }}
-            transition={{ repeat: Infinity, duration: 4 }}
-            className="text-9xl mb-8 opacity-10"
+            animate={{ y: [0, -12, 0] }}
+            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+            className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-[28px] flex items-center justify-center mx-auto mb-6 shadow-sm"
           >
-            📦
+            <ShoppingBag size={36} />
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase mb-8 tracking-tighter">
-            No Items <span className="text-emerald-500">Selected</span>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">
+            No Items <span className="text-emerald-600">Selected</span>
           </h2>
-          <p className="text-emerald-500/50 text-xs font-bold uppercase tracking-widest mb-8">
-            Add medicines to create an order for a customer.
+          <p className="text-slate-400 text-xs font-semibold tracking-wide mb-8">
+            Your shopping cart is currently empty. Explore our online pharmacy shop to add medicines.
           </p>
           
-          <Link href="/seller/dashboard" className="bg-emerald-500 text-black px-12 py-5 rounded-2xl font-black uppercase italic text-xs hover:scale-110 transition-all inline-block shadow-2xl shadow-emerald-500/20">
-            Go to Stock / Inventory
+          <Link href="/shop" className="bg-emerald-600 hover:bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all inline-block shadow-lg shadow-emerald-600/10 active:scale-95">
+            Go to Shop Page
           </Link>
         </div>
       </div>
@@ -126,52 +115,53 @@ export default function SellerCartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020d0a] bg-gradient-to-br from-[#020d0a] via-[#051a14] to-[#10b981]/10 text-white py-12 md:py-20 px-6 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
-      
-      <div className="max-w-7xl mx-auto relative z-10">
+    <div className="min-h-screen bg-slate-50 text-slate-900 py-12 md:py-16 px-4 sm:px-6 lg:px-10">
+      <div className="max-w-7xl mx-auto">
         
-        {/* Progress Bar */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-16 bg-white/[0.03] border border-white/5 p-8 rounded-[40px] backdrop-blur-3xl">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        {/* Progress Bar (হোয়াইট থিম সামঞ্জস্য) */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-12 bg-white border border-slate-200 p-6 rounded-[32px] shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-black shadow-lg shadow-emerald-500/20">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm">
                 <Truck size={20} />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">Order Threshold</p>
-                <h4 className="text-sm font-black italic uppercase">
-                  {total >= freeShippingThreshold ? "Free Delivery Unlocked for Customer!" : `Add ৳${freeShippingThreshold - total} more for Free Shipping`}
+                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Delivery Status</p>
+                <h4 className="text-sm font-black text-slate-900 uppercase">
+                  {total >= freeShippingThreshold ? "🎉 Free Shipping Unlocked!" : 
+                  `Add ৳${freeShippingThreshold - total} more for Free Shipping`}
                 </h4>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] font-black uppercase text-white/20 tracking-widest">Progress</p>
-              <p className="text-xl font-black italic text-white">{Math.round(progress)}%</p>
+            <div className="sm:text-right">
+              <p className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Progress</p>
+              <p className="text-lg font-black text-slate-900">{Math.round(progress)}%</p>
             </div>
           </div>
-          <div className="h-3 w-full bg-black/50 rounded-full border border-white/5 overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
+          <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className="h-full bg-emerald-500 rounded-full shadow-sm" />
           </div>
         </motion.div>
 
-        <div className="flex justify-between items-end mb-16">
+        {/* Title */}
+        <div className="flex justify-between items-end mb-10">
           <div>
-            <h1 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-4">
-              ORDER <span className="text-emerald-500">ITEMS</span>
+            <h1 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tight">
+              Shopping <span className="text-emerald-600">Cart</span>
             </h1>
-            <p className="text-emerald-500/30 font-black uppercase text-[10px] tracking-[0.4em] flex items-center gap-2">
-               <ShieldCheck size={14} /> Seller Desk Control
+            <p className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mt-1">
+              Review items before placing your order
             </p>
           </div>
-          <button onClick={clearCart} className="text-red-500/40 hover:text-red-500 font-black uppercase text-[10px] tracking-widest transition-all pb-4 border-b border-transparent hover:border-red-500">
-            Clear Order
+          <button onClick={clearCart} className="text-slate-400 hover:text-red-500 font-bold uppercase text-[10px] tracking-widest transition-all pb-1 border-b border-transparent hover:border-red-500">
+            Clear Cart
           </button>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-12">
+        {/* Content Grid */}
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Main List */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4">
             <AnimatePresence mode="popLayout">
               {cart.map((item, index) => {
                 const itemId = item.medicineId || item.id;
@@ -179,44 +169,44 @@ export default function SellerCartPage() {
                   <motion.div
                     key={itemId || index}
                     layout
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 30 }}
-                    className="bg-white/[0.02] border border-white/5 rounded-[50px] p-8 md:p-10 flex flex-col md:flex-row gap-10 items-center backdrop-blur-3xl hover:bg-white/[0.05] transition-all group"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="bg-white border border-slate-200 rounded-[32px] p-5 sm:p-6 flex flex-col sm:flex-row gap-6 items-center shadow-sm hover:shadow-md transition-all group"
                   >
-                    <div className="w-32 h-32 bg-emerald-500/5 rounded-[40px] border border-white/5 flex items-center justify-center text-5xl shadow-2xl group-hover:scale-110 transition-transform">
+                    <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center justify-center text-3xl shadow-inner group-hover:scale-105 transition-transform">
                       💊
                     </div>
                     
-                    <div className="flex-1 text-center md:text-left">
-                      <h3 className="font-black italic uppercase text-3xl mb-2 tracking-tighter group-hover:text-emerald-500 transition-colors">
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="font-black text-slate-900 text-xl tracking-tight group-hover:text-emerald-600 transition-colors uppercase">
                         {item.name}
                       </h3>
-                      <p className="text-emerald-500 font-black text-2xl mb-8">৳{item.price}</p>
+                      <p className="text-emerald-600 font-extrabold text-base mt-0.5">৳{item.price}</p>
                       
-                      <div className="flex items-center justify-center md:justify-start gap-8">
-                        <div className="flex items-center gap-6 bg-black/60 rounded-[25px] p-2 border border-white/5 shadow-2xl">
-                          <button onClick={() => updateQuantity(itemId, -1)} className="w-12 h-12 flex items-center justify-center bg-white/5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all">
-                            <Minus size={20} />
+                      <div className="flex items-center justify-center sm:justify-start gap-6 mt-4">
+                        <div className="flex items-center gap-4 bg-slate-50 rounded-xl p-1 border border-slate-200">
+                          <button onClick={() => updateQuantity(itemId, -1)} className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                            <Minus size={14} />
                           </button>
-                          <span className="font-black italic text-2xl w-8 text-center">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(itemId, 1)} className="w-12 h-12 flex items-center justify-center bg-white/5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all">
-                            <Plus size={20} />
+                          <span className="font-black text-slate-900 text-sm w-5 text-center">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(itemId, 1)} className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                            <Plus size={14} />
                           </button>
                         </div>
-                        <div className="text-[10px] font-black text-white/10 uppercase tracking-[0.2em]">
-                          Current Stock: {item.stock}
+                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                          Stock: {item.stock}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto pt-8 md:pt-0 border-t md:border-none border-white/5">
-                      <button onClick={() => removeItem(itemId)} className="text-white/10 hover:text-red-500 p-4 transition-all hover:scale-125">
-                        <Trash2 size={28} />
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-none border-slate-100">
+                      <button onClick={() => removeItem(itemId)} className="text-slate-300 hover:text-red-500 p-2 transition-colors">
+                        <Trash2 size={20} />
                       </button>
-                      <div className="text-right">
-                        <p className="text-[11px] font-black text-white/20 uppercase mb-2 tracking-widest">Subtotal</p>
-                        <p className="text-4xl font-black italic tracking-tighter leading-none">৳{item.price * item.quantity}</p>
+                      <div className="text-right sm:mt-4">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Subtotal</p>
+                        <p className="text-xl font-black text-slate-900">৳{item.price * item.quantity}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -225,60 +215,46 @@ export default function SellerCartPage() {
             </AnimatePresence>
           </div>
 
-          {/* Sticky Summary */}
+          {/* Checkout Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white/[0.03] border border-white/10 rounded-[60px] p-12 backdrop-blur-3xl sticky top-24 shadow-2xl overflow-hidden">
-              <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-12 pb-6 border-b border-white/5">
-                 Invoice <span className="text-emerald-500">Summary</span>
+            <div className="bg-white border border-slate-200 rounded-[40px] p-8 shadow-sm sticky top-24">
+              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
+                Order <span className="text-emerald-600">Summary</span>
               </h2>
               
-              <div className="space-y-6 mb-12">
-                <div className="flex justify-between items-center text-white/40">
-                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">Subtotal</span>
-                   <span className="text-xl font-black italic text-white">৳{total}</span>
+              <div className="space-y-4 mb-8">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Items Subtotal</span>
+                  <span className="text-base font-black text-slate-900">৳{total}</span>
                 </div>
-                <div className="flex justify-between items-center text-white/40">
-                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">Est. Delivery</span>
-                   <span className={`text-xl font-black italic uppercase ${total >= freeShippingThreshold ? 'text-emerald-500' : 'text-white'}`}>
-                      {total >= freeShippingThreshold ? "Free" : "৳60"}
-                   </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Delivery Charge</span>
+                  <span className={`text-base font-black uppercase ${total >= freeShippingThreshold ? 'text-emerald-600' : 'text-slate-900'}`}>
+                    {total >= freeShippingThreshold ? "Free" : "৳60"}
+                  </span>
                 </div>
-                <div className="h-[1px] w-full bg-white/5" />
-                <div className="flex justify-between items-end pt-4">
+                <div className="h-[1px] w-full bg-slate-100" />
+                <div className="flex justify-between items-end pt-2">
                   <div>
-                    <p className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em] mb-1">Total Grand</p>
-                    <p className="text-5xl font-black italic text-white tracking-tighter leading-none">
+                    <p className="text-[9px] font-bold uppercase text-emerald-600 tracking-widest mb-0.5">Grand Total</p>
+                    <p className="text-3xl font-black text-slate-900 tracking-tight">
                       ৳{total >= freeShippingThreshold ? total : total + 60}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* 🧾 পিওর সেলার ইনভয়েস চেকআউট রাউট */}
+              {/* 🧾 কাস্টমারদের অর্ডার বা চেকআউট পেজ রাউট */}
               <button
-                onClick={() => router.push('/seller/dashboard/checkout')}
-                className="w-full bg-emerald-500 text-black py-8 rounded-[30px] font-black uppercase italic text-sm tracking-[0.2em] transition-all flex items-center justify-center gap-4 shadow-2xl shadow-emerald-500/20 hover:bg-white hover:scale-[1.02] active:scale-95 group"
+                onClick={() => router.push('/customer/checkout')} // অথবা আপনার চেকআউট রাউট পাথ
+                className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-600/10 hover:bg-slate-900 active:scale-95 group"
               >
-                PROCEED TO INVOICE 
-                <ArrowRight size={22} className="group-hover:translate-x-3 transition-transform" />
+                PROCEED TO CHECKOUT 
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#020d0a]/90 backdrop-blur-2xl border-t border-white/5 p-8 z-50 flex items-center justify-between">
-        <div>
-          <p className="text-[9px] font-black uppercase text-white/30 tracking-widest mb-1">Grand Total</p>
-          <p className="text-3xl font-black italic text-emerald-500">৳{total >= freeShippingThreshold ? total : total + 60}</p>
-        </div>
-        <button 
-          onClick={() => router.push('/seller/dashboard/checkout')} 
-          className="bg-emerald-500 text-black px-10 py-5 rounded-2xl font-black uppercase italic text-xs tracking-widest shadow-xl shadow-emerald-500/20"
-        >
-          Invoice
-        </button>
       </div>
     </div>
   );

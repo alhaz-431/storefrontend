@@ -24,14 +24,14 @@ export default function CartPage() {
       try {
         const user = JSON.parse(userStr);
 
-        // 🛡️ ডিফেন্সিভ গার্ড: যদি কোনোভাবে কোনো সেলার এই পেজে চলে আসে, তাকে সেলার কার্টেই পুশ করে দেবে
+      
         if (user && user.role === "Seller") {
-          router.replace("/seller/dashboard/cart"); // আপনার সেলার কার্ট রাউট অনুসারে চেঞ্জ করতে পারেন
+          router.replace("/seller/dashboard/cart"); 
           return;
         }
 
         if (user && (user.id || user._id)) {
-          // কাস্টমারের ইউনিক আইডি দিয়ে আলাদা কার্ট কী (Key)
+       
           storageKey = `medistore_cart_${user.id || user._id}`;
         }
       } catch (e) {
@@ -41,7 +41,7 @@ export default function CartPage() {
 
     setCartKey(storageKey);
 
-    // ২. শুধু এই কাস্টমারের জন্য সংরক্ষিত কার্ট লোড হবে
+
     const savedCart = localStorage.getItem(storageKey);
     if (savedCart) {
       setCart(JSON.parse(savedCart));
@@ -94,7 +94,8 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center
+       text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
         <Loader2 className="animate-spin text-emerald-600" size={18} /> Syncing your cart...
       </div>
     );
@@ -106,10 +107,12 @@ export default function CartPage() {
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
           <ShoppingBag size={72} className="text-slate-300 mb-5 mx-auto animate-bounce" />
           <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Your cart is empty</h2>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 mb-6">Looks like you haven't added any medicines yet.</p>
+          <p className="text-slate-400 text-xs
+           font-bold uppercase tracking-widest mt-1 mb-6">Looks like you haven't added any medicines yet.</p>
           <button 
             onClick={() => router.push("/customer/shop")}
-            className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
+            className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl font-black
+             text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
           >
             Start Shopping
           </button>
@@ -125,7 +128,8 @@ export default function CartPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
-            <button onClick={() => router.back()} className="flex items-center gap-1.5 text-slate-400 hover:text-slate-900 transition-colors mb-2 text-[10px] font-black uppercase tracking-wider">
+            <button onClick={() => router.back()} className="flex items-center 
+            gap-1.5 text-slate-400 hover:text-slate-900 transition-colors mb-2 text-[10px] font-black uppercase tracking-wider">
               <ChevronLeft size={14} /> Continue Shopping
             </button>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight">Shopping <span className="text-emerald-600">Cart</span></h1>
@@ -152,10 +156,12 @@ export default function CartPage() {
                     initial={{ y: 15, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ x: -30, opacity: 0 }}
-                    className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all group"
+                    className="bg-white border border-slate-200 p-4 sm:p-5 
+                    rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center text-xl shadow-inner">
+                      <div className="w-16 h-16 bg-slate-50 border
+                       border-slate-100 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center text-xl shadow-inner">
                         💊
                       </div>
                       
@@ -226,7 +232,8 @@ export default function CartPage() {
 
               <button 
                 onClick={() => router.push("/customer/checkout")}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-50 uppercase tracking-widest text-xs"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white 
+                py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-50 uppercase tracking-widest text-xs"
               >
                 Checkout Now
                 <ArrowRight size={14} />

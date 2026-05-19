@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, ShoppingCart, User } from "lucide-react";
+import { ShoppingBag, ShoppingCart, User, Loader2 } from "lucide-react";
 
 export default function CustomerDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -19,10 +19,14 @@ export default function CustomerDashboard() {
 
     try {
       const parsedUser = JSON.parse(userData);
-      if (parsedUser.role !== "CUSTOMER") {
+      
+      // রোল কেস-সেন্সিটিভ সেফটি চেক
+      const role = parsedUser.role?.toUpperCase();
+      if (role !== "CUSTOMER") {
         router.replace("/");
         return;
       }
+      
       setUser(parsedUser);
       setLoading(false);
     } catch (error) {
@@ -31,40 +35,79 @@ export default function CustomerDashboard() {
     }
   }, [router]);
 
+  // হোয়াইট থিম লোডার
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#02040a] text-white">
-        <div className="animate-pulse text-emerald-500 font-bold">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
+        <Loader2 className="animate-spin text-emerald-600" size={18} /> 
+        Loading Secure Panel...
       </div>
     );
   }
 
   return (
-    // এখানে কোনো sidebar div নেই, কারণ layout.tsx থেকে সাইডবার আসবে
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-2">
-        Welcome back, <span className="text-emerald-500">{user?.name}</span> 👋
-      </h1>
-      <p className="text-slate-500 mb-10">Manage your health and orders from one place.</p>
+    <div className="p-4 sm:p-6 lg:p-10 min-h-screen bg-slate-50 font-sans text-slate-900">
+      
+      {/* Header Section */}
+      <div className="mb-8 md:mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight">
+            Welcome back, <span className="text-emerald-600">{user?.name || "Customer"}</span> 👋
+          </h1>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
+            Manage your health and orders from one place
+          </p>
+        </div>
+        
+        {/* একটিভ স্ট্যাটাস ব্যাজ (সেলার পেজের সাথে মিল রেখে) */}
+        <div className="bg-white border border-slate-200 px-4 py-2 rounded-2xl flex items-center gap-3 shadow-sm">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">Account Active</span>
+        </div>
+      </div>
 
+      {/* Cards Grid (১০০% হোয়াইট থিম ও প্রিমিয়াম ডিজাইন) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white/5 p-6 rounded-xl border border-white/10 hover:border-emerald-500/50 transition cursor-pointer">
-          <div className="text-emerald-500 mb-4"><ShoppingBag size={24} /></div>
-          <h2 className="text-lg font-semibold">My Orders</h2>
-          <p className="text-slate-400 mt-2 text-sm">Track and view your medicine orders.</p>
+        
+        {/* My Orders Card */}
+        <div 
+          onClick={() => router.push("/customer/orders")}
+          className="bg-white border border-slate-200 p-6 rounded-[32px] hover:shadow-xl hover:shadow-slate-200/50 hover:border-emerald-500/50 transition-all duration-300 cursor-pointer group"
+        >
+          <div className="bg-emerald-50 text-emerald-600 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <ShoppingBag size={24} />
+          </div>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">History</p>
+          <h2 className="text-lg font-black text-slate-900 mt-1 uppercase tracking-tight">My Orders</h2>
+          <p className="text-slate-400 mt-1 text-xs font-semibold leading-relaxed">Track, cancel, and view your pharmacy medicine orders.</p>
         </div>
 
-        <div className="bg-white/5 p-6 rounded-xl border border-white/10 hover:border-blue-500/50 transition cursor-pointer">
-          <div className="text-blue-500 mb-4"><ShoppingCart size={24} /></div>
-          <h2 className="text-lg font-semibold">Shopping Cart</h2>
-          <p className="text-slate-400 mt-2 text-sm">Check items you've added to buy.</p>
+        {/* Shopping Cart Card */}
+        <div 
+          onClick={() => router.push("/customer/cart")}
+          className="bg-white border border-slate-200 p-6 rounded-[32px] hover:shadow-xl hover:shadow-slate-200/50 hover:border-blue-500/50 transition-all duration-300 cursor-pointer group"
+        >
+          <div className="bg-blue-50 text-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <ShoppingCart size={24} />
+          </div>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Basket</p>
+          <h2 className="text-lg font-black text-slate-900 mt-1 uppercase tracking-tight">Shopping Cart</h2>
+          <p className="text-slate-400 mt-1 text-xs font-semibold leading-relaxed">Check items, change quantities, and proceed to buy.</p>
         </div>
 
-        <div className="bg-white/5 p-6 rounded-xl border border-white/10 hover:border-purple-500/50 transition cursor-pointer">
-          <div className="text-purple-500 mb-4"><User size={24} /></div>
-          <h2 className="text-lg font-semibold">My Profile</h2>
-          <p className="text-slate-400 mt-2 text-sm">Update your address and info.</p>
+        {/* My Profile Card */}
+        <div 
+          onClick={() => router.push("/customer/profile")}
+          className="bg-white border border-slate-200 p-6 rounded-[32px] hover:shadow-xl hover:shadow-slate-200/50 hover:border-purple-500/50 transition-all duration-300 cursor-pointer group"
+        >
+          <div className="bg-purple-50 text-purple-600 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <User size={24} />
+          </div>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Account</p>
+          <h2 className="text-lg font-black text-slate-900 mt-1 uppercase tracking-tight">My Profile</h2>
+          <p className="text-slate-400 mt-1 text-xs font-semibold leading-relaxed">Update your shipping address, password, and info.</p>
         </div>
+
       </div>
     </div>
   );

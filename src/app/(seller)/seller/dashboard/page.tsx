@@ -1,14 +1,57 @@
 "use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { DollarSign, Package, ShoppingCart, Activity, ArrowUpRight, Clock, ShieldCheck } from "lucide-react";
+import { 
+  DollarSign, Package, ShoppingCart, Activity, 
+  ArrowUpRight, Clock, ShieldCheck, Loader2 
+} from "lucide-react";
 
 export default function SellerDashboard() {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // 🛡️ ক্লায়েন্ট-সাইড সিকিউরিটি গার্ড (Vercel ও Render ফ্রেন্ডলি)
+  useEffect(() => {
+    const userStr = localStorage.getItem("medistore_user");
+    
+    if (!userStr) {
+      // যদি লোকাল স্টোরেজে কোনো ইউজার ডাটা না থাকে, তাকে লগইন পেজে ব্যাক করাও
+      router.replace("/login");
+    } else {
+      try {
+        const user = JSON.parse(userStr);
+        // যদি ইউজার লগইন থাকে কিন্তু সে 'Seller' না হয় (যেমন কাস্টমার), তবে তাকে মেইন হোমে পাঠিয়ে দাও
+        if (user.role !== "Seller") {
+          router.replace("/");
+        } else {
+          // ইউজার যদি ভ্যালিড সেলার হয়, তবেই ড্যাশবোর্ড দেখাও
+          setIsAuthorized(true);
+        }
+      } catch (e) {
+        console.error("Auth check error", e);
+        router.replace("/login");
+      }
+    }
+  }, [router]);
+
   const stats = [
     { label: "Total Revenue", value: "৳12,450", icon: <DollarSign size={24}/>, color: "text-emerald-600", bg: "bg-emerald-50" },
     { label: "Total Medicines", value: "48", icon: <Package size={24}/>, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "Total Orders", value: "850", icon: <ShoppingCart size={24}/>, color: "text-purple-600", bg: "bg-purple-50" },
     { label: "Pending Orders", value: "12", icon: <Clock size={24}/>, color: "text-orange-600", bg: "bg-orange-50" },
   ];
+
+  // ⏳ অথেন্টিকেশন চেক করার সময় এই লোডারটি স্ক্রিনে ফ্ল্যাশ হওয়া আটকাবে
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
+        <Loader2 className="animate-spin text-emerald-600" size={20} /> 
+        Checking Dashboard Access...
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-10 min-h-screen bg-slate-50 font-sans">

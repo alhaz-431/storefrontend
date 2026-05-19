@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Menu, X, Pill, LayoutDashboard, Home, Store, Layers3, LogOut, User } from "lucide-react";
 
@@ -12,33 +12,50 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const router = useRouter();
+  const pathname = usePathname(); // রাউট চেঞ্জ ট্র্যাক করার জন্য
 
   useEffect(() => {
     const checkData = () => {
+      // লোকাল স্টোরেজ থেকে ডেটা নেওয়া হচ্ছে
       const token = localStorage.getItem("token");
       const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
       const user = JSON.parse(localStorage.getItem("medistore_user") || "{}");
 
-      setIsLoggedIn(!!token);
-      setIsAdmin(user?.role === "ADMIN");
+      // 🛡️ ডাবল লেয়ার প্রোটেকশন চেক: টোকেন এবং ইউজার অবজেক্ট দুইটাই থাকতে হবে
+      if (token && user && user.role) {
+        setIsLoggedIn(true);
+        setIsAdmin(user.role.toUpperCase() === "ADMIN");
+      } else {
+        // যদি কোনো একটাও মিসিং থাকে, তাহলে ইউজার লগইন নেই
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
+      
       setCartCount(cart.length);
     };
 
+    // প্রথমবার রেন্ডার হলে চেক করবে
     checkData();
+
+    // ইভেন্ট লিসেনার সেটআপ
     window.addEventListener("storage", checkData);
-    // শপ পেজ থেকে কাস্টম ইভেন্ট লিসেনার (যদি আগে ব্যবহার করে থাকেন)
     window.addEventListener("cartUpdated", checkData); 
 
     return () => {
       window.removeEventListener("storage", checkData);
       window.removeEventListener("cartUpdated", checkData);
     };
-  }, []);
+  }, [pathname]); // 🎯 রাউট চেঞ্জ হওয়ার সাথে সাথে যেন বাটন রেন্ডারিং নিখুঁতভাবে চেক হয়
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("medistore_user");
+    setIsLoggedIn(false);
+    setIsAdmin(false);
     setIsMenuOpen(false);
+    
+    // Vercel ক্যাশ ক্লিয়ারের জন্য রাউটার পুশ ও হার্ড রিফ্রেশ
+    router.push("/");
     window.location.reload();
   };
 
@@ -73,6 +90,8 @@ export default function Navbar() {
               {link.icon} {link.name}
             </Link>
           ))}
+          
+          {/* 🛡️ ডেক্সটপ কন্ডিশন: ইউজার লগইন থাকলেই কেবল ড্যাশবোর্ড বাটন দেখাবে */}
           {isLoggedIn && (
             <button onClick={handleDashboard} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300 hover:text-emerald-500 tracking-widest transition-all">
               <LayoutDashboard size={16} /> Dashboard
@@ -83,7 +102,7 @@ export default function Navbar() {
         {/* DESKTOP & MOBILE RIGHT SECTION */}
         <div className="flex items-center gap-4 md:gap-6">
           
-          {/* Cart Icon - এমারেল্ড কালার এবং ব্যাকগ্রাউন্ড ইফেক্ট সহ */}
+          {/* Cart Icon */}
           <Link href="/cart" className="relative text-emerald-500 bg-emerald-500/10 p-2.5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all z-[110] border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
             <ShoppingCart size={20} />
             {cartCount > 0 && (
@@ -93,7 +112,7 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* Desktop Auth - Logout এখন একটি বাটন এর ভেতরে */}
+          {/* Desktop Auth */}
           <div className="hidden md:block">
             {isLoggedIn ? (
               <button 
@@ -144,6 +163,7 @@ export default function Navbar() {
                 </Link>
               ))}
               
+              {/* 🛡️ মোবাইল কন্ডিশন: লগইন থাকলেই কেবল ড্যাশবোর্ড দেখাবে */}
               {isLoggedIn && (
                 <button 
                   onClick={handleDashboard}
@@ -156,6 +176,7 @@ export default function Navbar() {
 
               <hr className="border-white/5 my-4" />
 
+              {/* Mobile Auth Button Condition */}
               {isLoggedIn ? (
                 <button 
                   onClick={handleLogout}
