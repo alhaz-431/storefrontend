@@ -9,7 +9,7 @@ import Link from "next/link";
 
 interface Order {
   id: string;
-  orderNumber: string;
+  orderNumber?: string; // অপশনাল সেফটি
   status: string;
   totalAmount: number;
   shippingAddress: string;
@@ -21,6 +21,7 @@ interface Order {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null); // ওর্ডার ক্যানসেলের জন্য আলাদা লোডার স্টেট
 
   useEffect(() => {
     fetchOrders();
@@ -30,10 +31,19 @@ export default function OrdersPage() {
     setLoading(true);
     try {
       const res = await api.orders.getMyOrders();
-      // API রেসপন্স হ্যান্ডলিং ফিক্স
-      setOrders(res.data || res || []);
+      
+      // 🛡️ ১০০% সেফ ডেটা অ্যাসাইনমেন্ট (অ্যারে কিনা তা নিশ্চিত করা হচ্ছে)
+      if (res && Array.isArray(res.data)) {
+        setOrders(res.data);
+      } else if (Array.isArray(res)) {
+        setOrders(res);
+      } else {
+        setOrders([]);
+      }
     } catch (error: any) {
+      console.error("Fetch Orders Error:", error);
       toast.error("Failed to load orders");
+      setOrders([]); // এরর খেলেও স্টেট সেফ রাখার জন্য খালি অ্যারে
     } finally {
       setLoading(false);
     }
@@ -41,13 +51,21 @@ export default function OrdersPage() {
 
   const handleCancelOrder = async (orderId: string) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;
+    
+    setCancellingId(orderId); // নির্দিষ্ট বাটনে লোডার অন করা হলো
+    const toastId = toast.loading("Cancelling your order...");
+    
     try {
-      // ব্যাকএন্ড updateOrderStatus ফাংশন অনুযায়ী CANCELLED স্ট্যাটাস পুশ
+      // ব্যাকএন্ড কাস্টম রাউট অনুযায়ী স্ট্যাটাস আপডেট
       await api.orders.updateStatus(orderId, { status: "CANCELLED" }); 
-      toast.success("Order cancelled successfully");
-      fetchOrders();
-    } catch (error) {
-      toast.error("Could not cancel order");
+      toast.success("Order cancelled successfully", { id: toastId });
+      await fetchOrders(); // নতুন লিস্ট রি-ফেচ করা
+    } catch (error: any) {
+      console.error("Cancel Order Error:", error);
+      const errMsg = error.response?.data?.message || error.message || "Could not cancel order";
+      toast.error(errMsg, { id: toastId });
+    } finally {
+      setCancellingId(null); // লোডার অফ
     }
   };
 
@@ -71,8 +89,13 @@ export default function OrdersPage() {
     }
   };
 
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const formatDate = (date: string) => {
+    try {
+      return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    } catch (e) {
+      return "N/A";
+    }
+  };
 
   if (loading) {
     return (
@@ -117,7 +140,7 @@ export default function OrdersPage() {
                 transition={{ delay: index * 0.05 }}
                 className="bg-white border border-slate-200 rounded-[24px] p-6 md:p-8 group relative overflow-hidden shadow-sm hover:shadow-md transition-all hover:border-slate-300"
               >
-                {/* ব্যাকগ্রাউন্ড ওয়াটারমার্ক ইনডেক্স */}
+                {/* ব্যাকগ্রাউন্ড ওয়াটারমার্ক ইনডেক্স */}
                 <div className="absolute -top-3 -left-1 text-slate-50 text-7xl font-black italic pointer-events-none select-none group-hover:text-slate-100/70 transition-colors">
                   {index + 1}
                 </div>
@@ -128,7 +151,10 @@ export default function OrdersPage() {
                       <span className="text-[9px] font-black px-2 py-0.5 bg-slate-900 text-white uppercase rounded">Order #{index + 1}</span>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{formatDate(order.createdAt)}</span>
                     </div>
-                    <h3 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">Ref: {order.orderNumber}</h3>
+                    {/* 💡 orderNumber না থাকলে আইডির প্রথম ৭টা ডিজিট শো করবে ব্যাকআপ হিসেবে */}
+                    <h3 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">
+                      Ref: {order.orderNumber || order.id.substring(0, 7).toUpperCase()}
+                    </h3>
                   </div>
 
                   <div className={`sm:self-center self-start px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border shadow-sm ${statusStyle(order.status)}`}>
@@ -149,8 +175,8 @@ export default function OrdersPage() {
                   
                   <div className="space-y-1">
                     <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Total Payable</p>
-                    <p className="text-3xl font-black text-slate-900 tracking-tight">
-                       ৳{order.totalAmount || 0}
+                    <p className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
+                      ৳{order.totalAmount || 0}
                     </p>
                   </div>
 
@@ -173,9 +199,22 @@ export default function OrdersPage() {
                   {(order.status === "PENDING" || order.status === "PLACED") && (
                     <button
                       onClick={() => handleCancelOrder(order.id)}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-rose-600 text-rose-600 hover:text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm"
+                      disabled={cancellingId === order.id}
+                      className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 border px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${
+                        cancellingId === order.id
+                          ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                          : "bg-rose-50 hover:bg-rose-600 border-rose-100 hover:border-rose-600 text-rose-600 hover:text-white"
+                      }`}
                     >
-                      <XCircle size={14} /> Cancel Order
+                      {cancellingId === order.id ? (
+                        <>
+                          <Loader2 className="animate-spin" size={14} /> Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <XCircle size={14} /> Cancel Order
+                        </>
+                      )}
                     </button>
                   )}
                 </div>

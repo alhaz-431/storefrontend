@@ -6,16 +6,28 @@ import { motion } from "framer-motion";
 import { 
   Package, Calendar, MapPin, 
   ArrowLeft, CheckCircle2, 
-  Clock, Star, Phone, Hash, CreditCard
+  Clock, Star, Phone, Hash, CreditCard, Loader2, AlertCircle
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
+
+interface OrderItem {
+  id: string;
+  medicineId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  medicine?: {
+    name: string;
+  };
+}
 
 export default function OrderDetails() {
   const { id } = useParams();
   const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false); // ক্যানসেল বাটনের নিজস্ব লোডার স্টেট
 
   useEffect(() => {
     if (!id) return;
@@ -27,10 +39,10 @@ export default function OrderDetails() {
       const res = await api.orders.getOrderById(id as string);
       const data = res.data || res;
 
-      const normalizedItems = (data.items || []).map((item: any) => ({
+      const normalizedItems = (data.items || []).map((item: any, idx: number) => ({
         ...item,
         name: item.medicine?.name || item.name || "Unknown Medicine",
-        id: item.id || item.medicineId || Math.random()
+        id: item.id || item.medicineId || `backup-id-${idx}` // Math.random() এর বদলে সেফ ইউনিক কি ব্যাকআপ
       }));
 
       setOrder({
@@ -38,9 +50,28 @@ export default function OrderDetails() {
         items: normalizedItems
       });
     } catch (err) {
-      toast.error("অর্ডারের তথ্য পাওয়া যায়নি");
+      console.error(err);
+      toast.error("অর্ডারের তথ্য পাওয়া যায়নি");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!confirm("Are you sure you want to cancel this order?")) return;
+    
+    setCancelling(true);
+    const toastId = toast.loading("Cancelling order...");
+    
+    try {
+      await api.orders.updateStatus(order.id, { status: "CANCELLED" });
+      toast.success("Order Cancelled Successfully", { id: toastId });
+      await fetchOrderDetails(); // ডাটা রি-ফেচ করে স্টেট আপডেট
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message || "Something went wrong", { id: toastId });
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -53,13 +84,21 @@ export default function OrderDetails() {
     </div>
   );
 
-  if (!order) return <div className="min-h-screen bg-[#020d0a] flex items-center justify-center text-white font-black italic">অর্ডার খুঁজে পাওয়া যায়নি।</div>;
+  if (!order) return (
+    <div className="min-h-screen bg-[#020d0a] flex items-center justify-center text-white font-black italic uppercase gap-2">
+      <AlertCircle className="text-red-500" size={20} /> অর্ডার খুঁজে পাওয়া যায়নি।
+    </div>
+  );
 
   const steps = ["PLACED", "PROCESSING", "SHIPPED", "DELIVERED"];
-  const currentStep = steps.indexOf(order.status);
+  
+  // 🛡️ CANCELLED হলে কাস্টম সেফ ইনডেক্স লজিক (ইউআই ক্র্যাশ প্রোটেকশন)
+  const isCancelled = order.status === "CANCELLED";
+  const currentStep = isCancelled ? -1 : steps.indexOf(order.status?.toUpperCase());
+  const progressWidth = isCancelled ? 0 : (currentStep / (steps.length - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#062d24,_#020d0a)] text-white p-6 lg:p-12">
+    <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#062d24,_#020d0a)] text-white p-6 lg:p-12 font-sans">
       <div className="max-w-6xl mx-auto">
         
         {/* HEADER */}
@@ -75,34 +114,44 @@ export default function OrderDetails() {
               Order <span className="text-emerald-500">Summary</span>
             </h1>
             <p className="text-emerald-500/40 text-[10px] font-black uppercase tracking-[0.4em] mt-4">
-              Reference: {order.orderNumber}
+              Reference: {order.orderNumber || order.id.substring(0, 7).toUpperCase()}
             </p>
           </div>
           
-          <div className="px-8 py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl backdrop-blur-xl">
-             <p className="text-[9px] font-black uppercase text-emerald-500/60 tracking-widest mb-1">Status</p>
-             <p className="text-xl font-black italic text-emerald-500 uppercase">{order.status}</p>
+          <div className={`px-8 py-4 border rounded-2xl backdrop-blur-xl ${
+            isCancelled ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+          }`}>
+             <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-60">Status</p>
+             <p className="text-xl font-black italic uppercase">{order.status}</p>
           </div>
         </div>
 
-        {/* TRACKER SECTION */}
+        {/* 🚀 TRACKER SECTION */}
         <div className="bg-white/[0.02] border border-white/5 rounded-[40px] p-8 md:p-12 mb-10 relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-1 bg-white/5"></div>
-           <div 
-             className="absolute top-0 left-0 h-1 bg-emerald-500 transition-all duration-1000 shadow-[0_0_20px_#10b981]" 
-             style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-           ></div>
-           
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {steps.map((step, index) => (
-                <div key={step} className={`relative flex flex-col items-center ${index <= currentStep ? "opacity-100" : "opacity-30"}`}>
-                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${index <= currentStep ? "bg-emerald-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.4)]" : "bg-white/5 text-white/40"}`}>
-                      {index <= currentStep ? <CheckCircle2 size={20} /> : <Clock size={20} />}
-                   </div>
-                   <p className="text-[10px] font-black mt-4 uppercase tracking-widest">{step}</p>
-                </div>
-              ))}
-           </div>
+           {isCancelled ? (
+             <div className="flex items-center justify-center gap-3 text-red-500/80 font-black tracking-widest text-xs uppercase py-4">
+               <AlertCircle size={20} /> This order has been cancelled
+             </div>
+           ) : (
+             <>
+               <div className="absolute top-0 left-0 w-full h-1 bg-white/5"></div>
+               <div 
+                 className="absolute top-0 left-0 h-1 bg-emerald-500 transition-all duration-1000 shadow-[0_0_20px_#10b981]" 
+                 style={{ width: `${progressWidth}%` }}
+               ></div>
+               
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                  {steps.map((step, index) => (
+                    <div key={step} className={`relative flex flex-col items-center transition-all duration-500 ${index <= currentStep ? "opacity-100" : "opacity-30"}`}>
+                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${index <= currentStep ? "bg-emerald-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.4)]" : "bg-white/5 text-white/40"}`}>
+                          {index <= currentStep ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+                       </div>
+                       <p className="text-[10px] font-black mt-4 uppercase tracking-widest">{step}</p>
+                    </div>
+                  ))}
+               </div>
+             </>
+           )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-10">
@@ -110,7 +159,7 @@ export default function OrderDetails() {
           {/* ITEMS LIST */}
           <div className="lg:col-span-2 space-y-4">
             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-6">Ordered Medicines</h3>
-            {order.items.map((item: any, idx: number) => (
+            {order.items.map((item: OrderItem, idx: number) => (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -128,7 +177,7 @@ export default function OrderDetails() {
                   </div>
                 </div>
                 <div className="text-right">
-                   <p className="text-xl font-black italic">৳{item.price * item.quantity}</p>
+                   <p className="text-xl font-black italic">৳{Number(item.price || 0) * Number(item.quantity || 0)}</p>
                 </div>
               </motion.div>
             ))}
@@ -138,15 +187,18 @@ export default function OrderDetails() {
           <div className="space-y-6">
             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-6">Payment & Shipping</h3>
             
-            <div className="bg-emerald-500 p-10 rounded-[40px] text-black shadow-[0_20px_50px_rgba(16,185,129,0.2)] relative overflow-hidden group">
+            <div className={`p-10 rounded-[40px] text-black shadow-[0_20px_50px_rgba(16,185,129,0.1)] relative overflow-hidden group transition-all ${
+              isCancelled ? "bg-slate-400" : "bg-emerald-500"
+            }`}>
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform">
                  <CreditCard size={120} />
               </div>
               <p className="text-[10px] font-black uppercase tracking-widest mb-2 opacity-60">Total Bill Amount</p>
-              {/* ✅ FIXED: order.totalAmount used here */}
               <h2 className="text-6xl font-black italic tracking-tighter">৳{order.totalAmount || 0}</h2>
               <div className="mt-6 pt-6 border-t border-black/10 flex justify-between items-center">
-                 <span className="text-[9px] font-black uppercase tracking-widest">Status: Paid via COD</span>
+                 <span className="text-[9px] font-black uppercase tracking-widest">
+                   {isCancelled ? "Order Cancelled" : "Status: Paid via COD"}
+                 </span>
                  <CheckCircle2 size={20} />
               </div>
             </div>
@@ -169,29 +221,28 @@ export default function OrderDetails() {
             </div>
 
             {order.status === "DELIVERED" && (
-              <button className="w-full bg-white text-black font-black uppercase italic py-5 rounded-[25px] flex items-center justify-center gap-3 hover:bg-emerald-500 transition-colors">
+              <button className="w-full bg-white text-black font-black uppercase italic py-5 rounded-[25px] flex items-center justify-center gap-3 hover:bg-emerald-500 transition-colors shadow-lg">
                 <Star size={18} fill="currentColor" /> Write a Review
               </button>
             )}
 
-            {order.status === "PLACED" && (
+            {(order.status === "PENDING" || order.status === "PLACED") && (
               <button 
-                className="w-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-black uppercase italic py-5 rounded-[25px] transition-all border border-red-500/20"
-               onClick={() => {
-  if(confirm("Are you sure you want to cancel this order?")) {
-    // 💡 এখানে "CANCELLED" এর জায়গায় অবজেক্ট { status: "CANCELLED" } পাস করা হয়েছে
-    api.orders.updateStatus(order.id, { status: "CANCELLED" })
-      .then(() => {
-        toast.success("Order Cancelled");
-        fetchOrderDetails();
-      })
-      .catch((error) => {
-        toast.error(error?.message || "Something went wrong");
-      });
-  }
-}}
+                disabled={cancelling}
+                onClick={handleCancelOrder}
+                className={`w-full font-black uppercase italic py-5 rounded-[25px] transition-all border flex items-center justify-center gap-2 ${
+                  cancelling 
+                    ? "bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed" 
+                    : "bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border-red-500/20 shadow-md"
+                }`}
               >
-                Cancel Order
+                {cancelling ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} /> Cancelling...
+                  </>
+                ) : (
+                  "Cancel Order"
+                )}
               </button>
             )}
           </div>
