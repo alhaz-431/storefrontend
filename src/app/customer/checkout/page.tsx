@@ -8,8 +8,8 @@ import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
 interface CartItem {
-  id: string;
-  medicineId: string;
+  id: string;         // কার্টে মূলত মেডিসিনের মেইন আইডিটিই এখানে 'id' হিসেবে থাকে
+  medicineId?: string; // ব্যাকআপ হিসেবে যদি কোনো কারণে medicineId থাকে
   name: string;
   price: number;
   quantity: number;
@@ -49,7 +49,7 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  // 💰 Safe Total Calculation (NaN এবং ক্র্যাশ প্রটেকশন সহ)
+  // 💰 Safe Total Calculation
   const totalAmount = cart.reduce((acc, item) => {
     const price = Number(item.price || 0);
     const qty = Number(item.quantity || 0);
@@ -72,43 +72,53 @@ export default function CheckoutPage() {
     const toastId = toast.loading("অর্ডার প্রসেস হচ্ছে...");
 
     try {
-      // 🛡️ নিখুঁত ডাটা ফরম্যাটিং যা ব্যাকএন্ড ও প্রিজমা স্কিমা এক্সপেক্ট করে
+      // 🛡️ ব্যাকএন্ড কন্ট্রোলারের রিকোয়ারমেন্ট অনুযায়ী পিওর অবজেক্ট ম্যাপিং
       const orderData = {
-        items: cart.map((item) => ({
-          medicineId: item.medicineId || item.id, // মেডিসিন আইডি প্রোপার ম্যাপিং
-          quantity: Number(item.quantity || 1),
-          price: Number(item.price || 0) 
-        })),
-        totalAmount: Number(totalAmount), // গ্র্যান্ড টোটাল অ্যামাউন্ট
+        items: cart.map((item) => {
+          // 🎯 ফিক্স: কার্ট আইটেমের ভেতরের 'id'-ই মূলত ডাটাবেজের Medicine টেবিলের ইউনিক প্রাইমারি আইডি!
+          const actualMedicineId = item.medicineId || item.id;
+          
+          return {
+            medicineId: actualMedicineId, 
+            quantity: Math.max(1, Number(item.quantity || 1)),
+            price: Number(item.price || 0) 
+          };
+        }),
+        totalAmount: Number(totalAmount), 
         shippingAddress: shippingAddress.trim(),
         shippingName: shippingName.trim(),
         shippingPhone: shippingPhone.trim()
       };
 
+      console.log("Sending clean payload to backend:", orderData);
+
       // 📡 ব্যাকএন্ড API কল
       const res = await api.orders.create(orderData);
 
-      if (res) {
+      // 💡 ব্যাকএন্ডের রেসপন্স ফরম্যাট ভ্যালিডেশন (res.success অথবা ডিরেক্ট অবজেক্ট চেক)
+      if (res || res?.success) {
         // ১. কার্ট লোকাল স্টোরেজ থেকে সাকসেসফুলি ক্লিয়ার করা
         localStorage.removeItem("medistore_cart");
         
-        // ২. গ্লোবাল ন্যাভবারের কার্ট কাউন্ট রিসেট করার জন্য ইভেন্ট ফায়ার করা
+        // ২. গ্লোবাল ন্যাভবারের কার্ট কাউন্ট রিসেট করার জন্য কাস্টম ইভেন্ট ট্রিপল ফায়ার
         window.dispatchEvent(new Event("cartUpdated"));
         
         // ৩. সাকসেস টোস্ট নোটিফিকেশন
         toast.success("Checkout Successful! 🎉", { id: toastId });
 
-        // ৪. সরাসরি কাস্টমার অর্ডারস লিস্ট পেজে রিডাইরেক্ট
+        // ৪. সরাসরি কাস্টমার অর্ডারস লিস্ট পেজে রিডাইরেক্ট করা
         router.push("/customer/orders"); 
+      } else {
+        throw new Error("অর্ডার রেসপন্স সঠিক নয়");
       }
     } catch (error: any) {
-      console.error("Checkout Error Details:", error);
+      console.error("Detailed Checkout Error Object:", error);
       
-      // ব্যাকএন্ড থেকে আসা ডাইনামিক এরর মেসেজ ক্যাচ করা
+      // ব্যাকএন্ড কন্ট্রোলার থেকে আসা সুনির্দিষ্ট এরর টেক্সট এক্সপোজ করা
       const message = error.response?.data?.error || 
                       error.response?.data?.message || 
                       error.message || 
-                      "অর্ডার প্লেস করতে समस्या হয়েছে";
+                      "অর্ডার প্লেস করতে সমস্যা হয়েছে";
                       
       toast.error(message, { id: toastId });
     } finally {
@@ -170,7 +180,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* ফুল অ্যাড্রেস টেক্সট-এরিয়া */}
+              {/* ফুল অ্যাড্রেস টেক্সট-এরিয়া */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Full Delivery Address</label>
                 <textarea 
@@ -198,7 +208,7 @@ export default function CheckoutPage() {
           </div>
         </motion.div>
 
-        {/* 💰 ডান পাশ: Order Summary Summary Panel */}
+        {/* 💰 ডান পাশ: Order Summary Panel */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
           <div className="bg-white border border-slate-200 rounded-[32px] p-6 md:p-10 shadow-sm sticky top-6">
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
@@ -234,7 +244,7 @@ export default function CheckoutPage() {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={16} /> PROCESSING...
-                </                >
+                </>
               ) : (
                 <>CONFIRM ORDER <ArrowRight size={16} /></>
               )}

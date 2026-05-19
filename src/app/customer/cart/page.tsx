@@ -16,23 +16,19 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ১. লগইন থাকা ইউজারের ইনফো নেওয়া হচ্ছে
+    // ১. লগইন থাকা ইউজারের ইনফো নেওয়া হচ্ছে
     const userStr = localStorage.getItem("medistore_user");
-    let storageKey = "medistore_cart_guest"; 
+    
+    // 🎯 ফিক্স: চেকআউট পেজের সাথে সিঙ্ক রাখার জন্য স্ট্যান্ডার্ড গ্লোবাল কী ব্যবহার করা সবচেয়ে নিরাপদ
+    let storageKey = "medistore_cart"; 
 
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
 
-      
         if (user && user.role === "Seller") {
           router.replace("/seller/dashboard/cart"); 
           return;
-        }
-
-        if (user && (user.id || user._id)) {
-       
-          storageKey = `medistore_cart_${user.id || user._id}`;
         }
       } catch (e) {
         console.error("Error parsing user data", e);
@@ -41,10 +37,14 @@ export default function CartPage() {
 
     setCartKey(storageKey);
 
-
     const savedCart = localStorage.getItem(storageKey);
     if (savedCart) {
-      setCart(JSON.parse(savedCart));
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {
+        console.error("Error parsing cart data", e);
+        setCart([]);
+      }
     } else {
       setCart([]); 
     }
@@ -56,6 +56,8 @@ export default function CartPage() {
     if (cartKey) {
       localStorage.setItem(cartKey, JSON.stringify(updatedCart));
     }
+    // গ্লোবাল ন্যাভবারের কাউন্ট আপডেট করার জন্য ইভেন্ট ফায়ার
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
   const incrementQty = (id: string) => {
@@ -105,14 +107,14 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-center font-sans">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-          <ShoppingBag size={72} className="text-slate-300 mb-5 mx-auto animate-bounce" />
+          <ShoppingBag size={72} className="text-slate-300 mb-5 mx-auto" />
           <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Your cart is empty</h2>
-          <p className="text-slate-400 text-xs
-           font-bold uppercase tracking-widest mt-1 mb-6">Looks like you haven't added any medicines yet.</p>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 mb-6">Looks like you haven't added any medicines yet.</p>
+          
+          {/* 🎯 ফিক্স: ভুল রুট সংশোধন করে সঠিক মেইন শপ পেজ লিংক অ্যাড করা হলো */}
           <button 
-            onClick={() => router.push("/customer/shop")}
-            className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl font-black
-             text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
+            onClick={() => router.push("/shop")}
+            className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
           >
             Start Shopping
           </button>
@@ -128,7 +130,8 @@ export default function CartPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
-            <button onClick={() => router.back()} className="flex items-center 
+            {/* 🎯 ফিক্স: কন্টিনিউ শপিং বাটনকেও মেইন শপে রিডাইরেক্ট করা হলো */}
+            <button onClick={() => router.push("/shop")} className="flex items-center 
             gap-1.5 text-slate-400 hover:text-slate-900 transition-colors mb-2 text-[10px] font-black uppercase tracking-wider">
               <ChevronLeft size={14} /> Continue Shopping
             </button>
@@ -160,8 +163,7 @@ export default function CartPage() {
                     rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-slate-50 border
-                       border-slate-100 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center text-xl shadow-inner">
+                      <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center text-xl shadow-inner">
                         💊
                       </div>
                       
@@ -232,15 +234,14 @@ export default function CartPage() {
 
               <button 
                 onClick={() => router.push("/customer/checkout")}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white 
-                py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-50 uppercase tracking-widest text-xs"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-50 uppercase tracking-widest text-xs"
               >
                 Checkout Now
                 <ArrowRight size={14} />
               </button>
 
               <div className="flex items-center justify-center gap-2 text-[9px] text-slate-400 font-black uppercase tracking-wider pt-2">
-                <ShieldCheck size={14} className="text-emerald-600" /> Secure 256-Bit SSL Connection
+                <ShieldCheck size={14} /> Secure 256-Bit SSL Connection
               </div>
             </div>
           </div>
