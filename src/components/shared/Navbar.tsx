@@ -12,32 +12,56 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const router = useRouter();
-  const pathname = usePathname(); // রাউট চেঞ্জ ট্র্যাক করার জন্য
+  const pathname = usePathname();
 
   useEffect(() => {
     const checkData = () => {
-      // লোকাল স্টোরেজ থেকে ডেটা নেওয়া হচ্ছে
-      const token = localStorage.getItem("token");
-      const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
-      const user = JSON.parse(localStorage.getItem("medistore_user") || "{}");
+      try {
+        const token = localStorage.getItem("token");
+        const userStr = localStorage.getItem("medistore_user");
+        const cartStr = localStorage.getItem("medistore_cart");
 
-      // 🛡️ ডাবল লেয়ার প্রোটেকশন চেক: টোকেন এবং ইউজার অবজেক্ট দুইটাই থাকতে হবে
-      if (token && user && user.role) {
-        setIsLoggedIn(true);
-        setIsAdmin(user.role.toUpperCase() === "ADMIN");
-      } else {
-        // যদি কোনো একটাও মিসিং থাকে, তাহলে ইউজার লগইন নেই
+        // 🛡️ নিখুঁত লগইন ভ্যালিডেশন চেক
+        if (token && userStr) {
+          const user = JSON.parse(userStr);
+          // ইউজার অবজেক্টের ভেতর প্রপার আইডি বা রোল আছে কিনা নিশ্চিত করা
+          if (user && user.role) {
+            setIsLoggedIn(true);
+            setIsAdmin(user.role.toUpperCase() === "ADMIN");
+          } else {
+            setIsLoggedIn(false);
+            setIsAdmin(false);
+          }
+        } else {
+          setIsLoggedIn(false);
+          setIsAdmin(false);
+        }
+
+        // 🛒 ডায়নামিক কার্ট কাউন্ট ভ্যালিডেশন (টোটাল কোয়ান্টিটি হিসাব করা)
+        if (cartStr) {
+          const cart = JSON.parse(cartStr);
+          if (Array.isArray(cart)) {
+            // প্রতিটি প্রোডাক্টের কোয়ান্টিটি যোগ করে রিয়েল কাউন্ট বের করা
+            const totalItems = cart.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0);
+            setCartCount(totalItems);
+          } else {
+            setCartCount(0);
+          }
+        } else {
+          setCartCount(0); // কার্ট ফোল্ডার বা স্টোরেজ ফাঁকা থাকলে সরাসরি ০
+        }
+      } catch (e) {
+        console.error("Error synchronizing navbar state:", e);
         setIsLoggedIn(false);
         setIsAdmin(false);
+        setCartCount(0);
       }
-      
-      setCartCount(cart.length);
     };
 
-    // প্রথমবার রেন্ডার হলে চেক করবে
+    // প্রথমবার এবং রাউট চেঞ্জ হলে চেক রান হবে
     checkData();
 
-    // ইভেন্ট লিসেনার সেটআপ
+    // গ্লোবাল ইভেন্ট লিসেনার
     window.addEventListener("storage", checkData);
     window.addEventListener("cartUpdated", checkData); 
 
@@ -45,27 +69,40 @@ export default function Navbar() {
       window.removeEventListener("storage", checkData);
       window.removeEventListener("cartUpdated", checkData);
     };
-  }, [pathname]); // 🎯 রাউট চেঞ্জ হওয়ার সাথে সাথে যেন বাটন রেন্ডারিং নিখুঁতভাবে চেক হয়
+  }, [pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("medistore_user");
+    // ঐচ্ছিক: লগআউটের সময় যদি কার্টও মুছতে চান তাহলে নিচের লাইনটি আনকমেন্ট করুন
+    // localStorage.removeItem("medistore_cart");
+    
     setIsLoggedIn(false);
     setIsAdmin(false);
     setIsMenuOpen(false);
+    setCartCount(0);
     
-    // Vercel ক্যাশ ক্লিয়ারের জন্য রাউটার পুশ ও হার্ড রিফ্রেশ
     router.push("/");
-    window.location.reload();
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   const handleDashboard = () => {
-    const user = JSON.parse(localStorage.getItem("medistore_user") || "{}");
-    const role = (user?.role || "").toUpperCase();
-    setIsMenuOpen(false);
-    if (role === "ADMIN") router.push("/admin/dashboard");
-    else if (role === "SELLER") router.push("/seller/dashboard");
-    else router.push("/customer/dashboard");
+    try {
+      const userStr = localStorage.getItem("medistore_user");
+      if (!userStr) return;
+      
+      const user = JSON.parse(userStr);
+      const role = (user?.role || "").toUpperCase();
+      setIsMenuOpen(false);
+
+      if (role === "ADMIN") router.push("/admin/dashboard");
+      else if (role === "SELLER") router.push("/seller/dashboard");
+      else router.push("/customer/dashboard");
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const navLinks = [
@@ -91,7 +128,7 @@ export default function Navbar() {
             </Link>
           ))}
           
-          {/* 🛡️ ডেক্সটপ কন্ডিশন: ইউজার লগইন থাকলেই কেবল ড্যাশবোর্ড বাটন দেখাবে */}
+          {/* 🛡️ ডেক্সটপ সিকিউরড ড্যাশবোর্ড লিঙ্ক */}
           {isLoggedIn && (
             <button onClick={handleDashboard} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300 hover:text-emerald-500 tracking-widest transition-all">
               <LayoutDashboard size={16} /> Dashboard
@@ -103,11 +140,15 @@ export default function Navbar() {
         <div className="flex items-center gap-4 md:gap-6">
           
           {/* Cart Icon */}
-          <Link href="/cart" className="relative text-emerald-500 bg-emerald-500/10 p-2.5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all z-[110] border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+          <Link href="/customer/cart" className="relative text-emerald-500 bg-emerald-500/10 p-2.5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all z-[110] border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
             <ShoppingCart size={20} />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg">
+            {cartCount > 0 ? (
+              <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg animate-none">
                 {cartCount}
+              </span>
+            ) : (
+              <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg">
+                0
               </span>
             )}
           </Link>
@@ -131,7 +172,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Hamburger Menu Button - Mobile Only */}
+          {/* Hamburger Menu Button */}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden text-white p-2 z-[110] hover:text-emerald-500 transition-colors"
@@ -163,7 +204,7 @@ export default function Navbar() {
                 </Link>
               ))}
               
-              {/* 🛡️ মোবাইল কন্ডিশন: লগইন থাকলেই কেবল ড্যাশবোর্ড দেখাবে */}
+              {/* 🛡️ মোবাইল সিকিউরড ড্যাশবোর্ড লিঙ্ক */}
               {isLoggedIn && (
                 <button 
                   onClick={handleDashboard}
@@ -176,7 +217,7 @@ export default function Navbar() {
 
               <hr className="border-white/5 my-4" />
 
-              {/* Mobile Auth Button Condition */}
+              {/* Mobile Auth Button */}
               {isLoggedIn ? (
                 <button 
                   onClick={handleLogout}

@@ -72,12 +72,10 @@ export default function CheckoutPage() {
     const toastId = toast.loading("অর্ডার প্রসেস হচ্ছে...");
 
     try {
-      // 🛡️ ব্যাকএন্ড কন্ট্রোলারের রিকোয়ারমেন্ট অনুযায়ী পিওর অবজেক্ট ম্যাপিং
+      // 🛡️ ব্যাকএন্ড কন্ট্রোলারের রিকোয়ারমেন্ট অনুযায়ী পিওর অবজেক্ট ম্যাপিং
       const orderData = {
         items: cart.map((item) => {
-          // 🎯 ফিক্স: কার্ট আইটেমের ভেতরের 'id'-ই মূলত ডাটাবেজের Medicine টেবিলের ইউনিক প্রাইমারি আইডি!
           const actualMedicineId = item.medicineId || item.id;
-          
           return {
             medicineId: actualMedicineId, 
             quantity: Math.max(1, Number(item.quantity || 1)),
@@ -92,33 +90,40 @@ export default function CheckoutPage() {
 
       console.log("Sending clean payload to backend:", orderData);
 
-      // 📡 ব্যাকএন্ড API কল
+      // 📡 আপনার api.ts এর orders.create কল (এটি ১টি আর্গুমেন্টই নেয় এবং অটো টোকেন পাঠায়)
       const res = await api.orders.create(orderData);
 
-      // 💡 ব্যাকএন্ডের রেসপন্স ফরম্যাট ভ্যালিডেশন (res.success অথবা ডিরেক্ট অবজেক্ট চেক)
-      if (res || res?.success) {
-        // ১. কার্ট লোকাল স্টোরেজ থেকে সাকসেসফুলি ক্লিয়ার করা
+      console.log("Backend Response Actual Data:", res);
+
+      // 💡 যেহেতু আপনার api fetcher ফেইল করলে নিজে থেকেই error throw করে, 
+      // সেহেতু res পাওয়া মানেই রিকোয়েস্টটি সফল হয়েছে।
+      if (res) {
+        // ১. কার্ট লোকাল স্টোরেজ থেকে সাকসেসফুলি ক্লিয়ার করা
         localStorage.removeItem("medistore_cart");
         
-        // ২. গ্লোবাল ন্যাভবারের কার্ট কাউন্ট রিসেট করার জন্য কাস্টম ইভেন্ট ট্রিপল ফায়ার
+        // ২. গ্লোবাল ন্যাভবারের কার্ট কাউন্ট রিসেট করার জন্য কাস্টম ইভেন্ট ফায়ার
         window.dispatchEvent(new Event("cartUpdated"));
         
         // ৩. সাকসেস টোস্ট নোটিফিকেশন
         toast.success("Checkout Successful! 🎉", { id: toastId });
 
-        // ৪. সরাসরি কাস্টমার অর্ডারস লিস্ট পেজে রিডাইরেক্ট করা
-        router.push("/customer/orders"); 
+        // ৪. সরাসরি কাস্টমার অর্ডারস লিস্ট পেজে রিডাইরেক্ট ও স্মুথ স্ক্রল নিশ্চিত করা
+        setTimeout(() => {
+          router.push("/customer/orders");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 150);
+        
       } else {
-        throw new Error("অর্ডার রেসপন্স সঠিক নয়");
+        throw new Error("অর্ডার প্রসেস করা সম্ভব হয়নি");
       }
     } catch (error: any) {
       console.error("Detailed Checkout Error Object:", error);
       
-      // ব্যাকএন্ড কন্ট্রোলার থেকে আসা সুনির্দিষ্ট এরর টেক্সট এক্সপোজ করা
+      // আপনার fetcher বা এক্সিওস রেসপন্স থেকে আসা নিখুঁত এরর মেসেজ হ্যান্ডলিং
       const message = error.response?.data?.error || 
                       error.response?.data?.message || 
                       error.message || 
-                      "অর্ডার প্লেস করতে সমস্যা হয়েছে";
+                      "অর্ডার প্লেস করতে সমস্যা হয়েছে";
                       
       toast.error(message, { id: toastId });
     } finally {
