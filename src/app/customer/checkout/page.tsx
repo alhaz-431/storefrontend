@@ -8,8 +8,8 @@ import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
 interface CartItem {
-  id: string;         // কার্টে মূলত মেডিসিনের মেইন আইডিটিই এখানে 'id' হিসেবে থাকে
-  medicineId?: string; // ব্যাকআপ হিসেবে যদি কোনো কারণে medicineId থাকে
+  id: string;         
+  medicineId?: string; 
   name: string;
   price: number;
   quantity: number;
@@ -72,9 +72,10 @@ export default function CheckoutPage() {
     const toastId = toast.loading("অর্ডার প্রসেস হচ্ছে...");
 
     try {
-      // 🛡️ ব্যাকএন্ড কন্ট্রোলারের রিকোয়ারমেন্ট অনুযায়ী পিওর অবজেক্ট ম্যাপিং
+      // 🛡️ ব্যাকএন্ডের রিকোয়ারমেন্ট অনুযায়ী নিখুঁত অবজেক্ট ম্যাপিং
       const orderData = {
         items: cart.map((item) => {
+          // আপনার ShopPage এবং DetailsPage এর সাথে মিল রেখে সঠিক আইডি নেওয়া হচ্ছে
           const actualMedicineId = item.medicineId || item.id;
           return {
             medicineId: actualMedicineId, 
@@ -90,13 +91,12 @@ export default function CheckoutPage() {
 
       console.log("Sending clean payload to backend:", orderData);
 
-      // 📡 আপনার api.ts এর orders.create কল (এটি ১টি আর্গুমেন্টই নেয় এবং অটো টোকেন পাঠায়)
+      // 📡 আপনার api.ts এর মাধ্যমে ব্যাকএন্ডে অর্ডার পাঠানো হচ্ছে
       const res = await api.orders.create(orderData);
 
       console.log("Backend Response Actual Data:", res);
 
-      // 💡 যেহেতু আপনার api fetcher ফেইল করলে নিজে থেকেই error throw করে, 
-      // সেহেতু res পাওয়া মানেই রিকোয়েস্টটি সফল হয়েছে।
+      // 💡 সাকসেস রেসপন্স আসলে ক্লিয়ারেন্স ও রিডাইরেকশন শুরু হবে
       if (res) {
         // ১. কার্ট লোকাল স্টোরেজ থেকে সাকসেসফুলি ক্লিয়ার করা
         localStorage.removeItem("medistore_cart");
@@ -107,11 +107,11 @@ export default function CheckoutPage() {
         // ৩. সাকসেস টোস্ট নোটিফিকেশন
         toast.success("Checkout Successful! 🎉", { id: toastId });
 
-        // ৪. সরাসরি কাস্টমার অর্ডারস লিস্ট পেজে রিডাইরেক্ট ও স্মুথ স্ক্রল নিশ্চিত করা
+        // 🎯 ৪. আপনার রিকোয়ারমেন্ট অনুযায়ী ঠিক ১০০ms ডিলের পর অটোমেটিক /customer/orders পেজে চলে যাবে
         setTimeout(() => {
           router.push("/customer/orders");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }, 150);
+          window.scrollTo({ top: 0, behavior: "smooth" }); // নতুন পেজে গিয়ে স্মুথলি ওপরে স্ক্রোল হবে
+        }, 100);
         
       } else {
         throw new Error("অর্ডার প্রসেস করা সম্ভব হয়নি");
@@ -119,7 +119,6 @@ export default function CheckoutPage() {
     } catch (error: any) {
       console.error("Detailed Checkout Error Object:", error);
       
-      // আপনার fetcher বা এক্সিওস রেসপন্স থেকে আসা নিখুঁত এরর মেসেজ হ্যান্ডলিং
       const message = error.response?.data?.error || 
                       error.response?.data?.message || 
                       error.message || 
