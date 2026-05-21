@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Phone, User, ArrowRight, CreditCard, ShieldCheck, Loader2 } from "lucide-react";
-import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
 interface CartItem {
@@ -75,7 +74,6 @@ export default function CheckoutPage() {
       // 🛡️ ব্যাকএন্ডের রিকোয়ারমেন্ট অনুযায়ী নিখুঁত অবজেক্ট ম্যাপিং
       const orderData = {
         items: cart.map((item) => {
-          // আপনার ShopPage এবং DetailsPage এর সাথে মিল রেখে সঠিক আইডি নেওয়া হচ্ছে
           const actualMedicineId = item.medicineId || item.id;
           return {
             medicineId: actualMedicineId, 
@@ -91,13 +89,24 @@ export default function CheckoutPage() {
 
       console.log("Sending clean payload to backend:", orderData);
 
-      // 📡 আপনার api.ts এর মাধ্যমে ব্যাকএন্ডে অর্ডার পাঠানো হচ্ছে
-      const res = await api.orders.create(orderData);
+      // 🔑 লোকাল স্টোরেজ থেকে অথেনটিকেশন টোকেন নেওয়া
+      const token = localStorage.getItem("token");
 
-      console.log("Backend Response Actual Data:", res);
+      // 📡 সরাসরি নেটিভ ফেচ (Fetch) দিয়ে সিকিউর হেডার সহ ব্যাকএন্ডে হিট করা
+      const response = await fetch("https://storemedistore.onrender.com/api/v1/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // 👈 ব্যাকএন্ড মিডলওয়্যার লক ভাঙার আসল চাবিকাঠি
+        },
+        body: JSON.stringify(orderData)
+      });
 
-      // 💡 সাকসেস রেসপন্স আসলে ক্লিয়ারেন্স ও রিডাইরেকশন শুরু হবে
-      if (res) {
+      const resData = await response.json();
+      console.log("Backend Response Actual Data:", resData);
+
+      // 💡 সাকসেস রেসপন্স আসলে ক্লিয়ারেন্স ও রিডাইরেকশন শুরু হবে
+      if (response.ok || resData.success) {
         // ১. কার্ট লোকাল স্টোরেজ থেকে সাকসেসফুলি ক্লিয়ার করা
         localStorage.removeItem("medistore_cart");
         
@@ -110,20 +119,15 @@ export default function CheckoutPage() {
         // 🎯 ৪. আপনার রিকোয়ারমেন্ট অনুযায়ী ঠিক ১০০ms ডিলের পর অটোমেটিক /customer/orders পেজে চলে যাবে
         setTimeout(() => {
           router.push("/customer/orders");
-          window.scrollTo({ top: 0, behavior: "smooth" }); // নতুন পেজে গিয়ে স্মুথলি ওপরে স্ক্রোল হবে
+          window.scrollTo({ top: 0, behavior: "smooth" }); // নতুন পেজে গিয়ে স্মুথলি ওপরে স্ক্রোল হবে
         }, 100);
         
       } else {
-        throw new Error("অর্ডার প্রসেস করা সম্ভব হয়নি");
+        throw new Error(resData.message || resData.error || "অর্ডার প্রসেস করা সম্ভব হয়নি");
       }
     } catch (error: any) {
       console.error("Detailed Checkout Error Object:", error);
-      
-      const message = error.response?.data?.error || 
-                      error.response?.data?.message || 
-                      error.message || 
-                      "অর্ডার প্লেস করতে সমস্যা হয়েছে";
-                      
+      const message = error.message || "অর্ডার প্লেস করতে সমস্যা হয়েছে";
       toast.error(message, { id: toastId });
     } finally {
       setLoading(false);
