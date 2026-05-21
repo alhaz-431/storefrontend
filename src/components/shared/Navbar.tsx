@@ -24,7 +24,6 @@ export default function Navbar() {
         // 🛡️ নিখুঁত লগইন ভ্যালিডেশন চেক
         if (token && userStr) {
           const user = JSON.parse(userStr);
-          // ইউজার অবজেক্টের ভেতর প্রপার আইডি বা রোল আছে কিনা নিশ্চিত করা
           if (user && user.role) {
             setIsLoggedIn(true);
             setIsAdmin(user.role.toUpperCase() === "ADMIN");
@@ -33,22 +32,22 @@ export default function Navbar() {
             setIsAdmin(false);
           }
         } else {
+          // 🎯 পরিবর্তন ১: টোকেন বা ইউজার না থাকলে স্টেট সাথে সাথে ফলস হবে (ড্যাশবোর্ড হাইড হবে)
           setIsLoggedIn(false);
           setIsAdmin(false);
         }
 
-        // 🛒 ডায়নামিক কার্ট কাউন্ট ভ্যালিডেশন (টোটাল কোয়ান্টিটি হিসাব করা)
+        // 🛒 ডায়নামিক কার্ট কাউন্ট ভ্যালিডেশন
         if (cartStr) {
           const cart = JSON.parse(cartStr);
-          if (Array.isArray(cart)) {
-            // প্রতিটি প্রোডাক্টের কোয়ান্টিটি যোগ করে রিয়েল কাউন্ট বের করা
+          if (Array.isArray(cart) && cart.length > 0) { // 🎯 পরিবর্তন ২: কার্টে প্রোডাক্ট থাকলেই কেবল হিসাব হবে
             const totalItems = cart.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0);
             setCartCount(totalItems);
           } else {
             setCartCount(0);
           }
         } else {
-          setCartCount(0); // কার্ট ফোল্ডার বা স্টোরেজ ফাঁকা থাকলে সরাসরি ০
+          setCartCount(0); 
         }
       } catch (e) {
         console.error("Error synchronizing navbar state:", e);
@@ -58,10 +57,8 @@ export default function Navbar() {
       }
     };
 
-    // প্রথমবার এবং রাউট চেঞ্জ হলে চেক রান হবে
     checkData();
 
-    // গ্লোবাল ইভেন্ট লিসেনার
     window.addEventListener("storage", checkData);
     window.addEventListener("cartUpdated", checkData); 
 
@@ -74,8 +71,7 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("medistore_user");
-    // ঐচ্ছিক: লগআউটের সময় যদি কার্টও মুছতে চান তাহলে নিচের লাইনটি আনকমেন্ট করুন
-    // localStorage.removeItem("medistore_cart");
+    localStorage.removeItem("medistore_cart"); // 🎯 পরিবর্তন ৩: লগআউট করলে কার্টও একদম ০ হয়ে যাবে
     
     setIsLoggedIn(false);
     setIsAdmin(false);
@@ -128,7 +124,7 @@ export default function Navbar() {
             </Link>
           ))}
           
-          {/* 🛡️ ডেক্সটপ সিকিউরড ড্যাশবোর্ড লিঙ্ক */}
+          {/* 🛡️ ডেক্সটপ সিকিউরড ড্যাশবোর্ড লিঙ্ক - শুধুমাত্র লগইন থাকলেই দেখাবে */}
           {isLoggedIn && (
             <button onClick={handleDashboard} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300 hover:text-emerald-500 tracking-widest transition-all">
               <LayoutDashboard size={16} /> Dashboard
@@ -142,15 +138,10 @@ export default function Navbar() {
           {/* Cart Icon */}
           <Link href="/customer/cart" className="relative text-emerald-500 bg-emerald-500/10 p-2.5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all z-[110] border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
             <ShoppingCart size={20} />
-            {cartCount > 0 ? (
-              <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg animate-none">
-                {cartCount}
-              </span>
-            ) : (
-              <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg">
-                0
-              </span>
-            )}
+            {/* 🛒 কার্ট কাউন্ট ০ এর বেশি হলে আসল সংখ্যা দেখাবে, না হলে ০ দেখাবে */}
+            <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg">
+              {cartCount}
+            </span>
           </Link>
 
           {/* Desktop Auth */}
