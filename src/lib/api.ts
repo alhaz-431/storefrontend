@@ -2,7 +2,7 @@
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://storemedistore.onrender.com/api/v1";
+  "https://storemedistore.onrender.com/api";
 
 // 🔑 Token getter
 const getToken = () => {
@@ -106,7 +106,7 @@ export const api = {
     getAllOrders: () => fetcher("/orders"),
     getOrderById: (id: string) => fetcher(`/orders/${id}`),
     
-    // ✅ এখানে পরিবর্তন করা হয়েছে: status: string এর বদলে data: any করা হয়েছে
+    
     updateStatus: (id: string, data: { status: string }) =>
       fetcher(`/orders/status/${id}`, {
         method: "PATCH",

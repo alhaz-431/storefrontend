@@ -32,15 +32,15 @@ export default function Navbar() {
             setIsAdmin(false);
           }
         } else {
-          // 🎯 পরিবর্তন ১: টোকেন বা ইউজার না থাকলে স্টেট সাথে সাথে ফলস হবে (ড্যাশবোর্ড হাইড হবে)
+          
           setIsLoggedIn(false);
           setIsAdmin(false);
         }
 
-        // 🛒 ডায়নামিক কার্ট কাউন্ট ভ্যালিডেশন
+     
         if (cartStr) {
           const cart = JSON.parse(cartStr);
-          if (Array.isArray(cart) && cart.length > 0) { // 🎯 পরিবর্তন ২: কার্টে প্রোডাক্ট থাকলেই কেবল হিসাব হবে
+          if (Array.isArray(cart) && cart.length > 0) { 
             const totalItems = cart.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0);
             setCartCount(totalItems);
           } else {
@@ -124,7 +124,7 @@ export default function Navbar() {
             </Link>
           ))}
           
-          {/* 🛡️ ডেক্সটপ সিকিউরড ড্যাশবোর্ড লিঙ্ক - শুধুমাত্র লগইন থাকলেই দেখাবে */}
+        
           {isLoggedIn && (
             <button onClick={handleDashboard} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300 hover:text-emerald-500 tracking-widest transition-all">
               <LayoutDashboard size={16} /> Dashboard

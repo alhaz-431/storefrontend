@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // পেজ রিফ্রেশ দিলেও যেন লগইন থাকে (Local Storage চেক)
+  
   useEffect(() => {
     const savedUser = localStorage.getItem("medistore_user");
     if (savedUser) {
@@ -59,12 +59,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// এখানে মেইন পরিবর্তনটি করা হয়েছে (বিল্ড এরর এড়ানোর জন্য)
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   
   if (!context) {
-    // বিল্ডের সময় যদি Provider না থাকে, এরর না দিয়ে আমরা একটি সেফ ভ্যালু রিটার্ন করছি
+   
     return {
       user: null,
       login: () => {},

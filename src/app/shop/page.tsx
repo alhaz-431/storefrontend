@@ -74,6 +74,7 @@ export default function ShopPage() {
     });
   };
 
+  
   return (
     <div className="pb-32 selection:bg-emerald-500/30 min-h-screen bg-white text-green-900">
       <div className="container mx-auto px-4 lg:px-8 max-w-7xl">

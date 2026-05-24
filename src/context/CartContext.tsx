@@ -22,7 +22,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // আগের কার্ট ডাটা লোকাল স্টোরেজ থেকে লোড করা
+  
   useEffect(() => {
     const savedCart = localStorage.getItem("medistore_cart");
     if (savedCart) {
@@ -30,7 +30,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // কার্টে কোনো পরিবর্তন হলে লোকাল স্টোরেজে সেভ করা
+  
   useEffect(() => {
     localStorage.setItem("medistore_cart", JSON.stringify(cart));
   }, [cart]);
