@@ -1,8 +1,7 @@
 // src/lib/api.ts
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://storemedistore.onrender.com/api";
+// ✅ রিকোয়ারমেন্ট অনুযায়ী মেইন বেস ইউআরএল ফিক্সড (ভুল env মান এড়াতে সরাসরি দেওয়া হলো)
+const BASE_URL = "https://storemedistore.onrender.com/api";
 
 // 🔑 Token getter
 const getToken = () => {
@@ -59,8 +58,9 @@ const fetcher = async (
   }
 };
 
-// 📦 API Object
+// 📦 API Object (অ্যাসাইনমেন্টের অফিশিয়াল শিট অনুযায়ী কাঁটায় কাঁটায় ম্যাচড)
 export const api = {
+  // 1️⃣ Authentication
   auth: {
     login: async (data: any) => {
       const res = await fetcher("/auth/login", {
@@ -84,44 +84,46 @@ export const api = {
     getMe: () => fetcher("/auth/me"), 
   },
 
+  // 2️⃣ Medicines & Categories (Public)
   medicines: {
-    getAll: () => fetcher("/medicines"),
-    getById: (id: string) => fetcher(`/medicines/${id}`),
-    create: (data: FormData) =>
-      fetcher("/medicines/add", { method: "POST", body: data }, true),
-    update: (id: string, data: FormData) =>
-      fetcher(`/medicines/${id}`, { method: "PATCH", body: data }, true),
-    delete: (id: string) =>
-      fetcher(`/medicines/${id}`, { method: "DELETE" }),
+    getAll: () => fetcher("/medicines"), // GET /api/medicines
+    getById: (id: string) => fetcher(`/medicines/${id}`), // GET /api/medicines/:id
   },
-
   categories: {
-    getAll: () => fetcher("/categories"),
+    getAll: () => fetcher("/categories"), // GET /api/categories
   },
 
+  // 3️⃣ Orders (Customer)
   orders: {
     create: (data: any) =>
-      fetcher("/orders", { method: "POST", body: JSON.stringify(data) }),
-    getMyOrders: () => fetcher("/orders/my"),
-    getAllOrders: () => fetcher("/orders"),
-    getOrderById: (id: string) => fetcher(`/orders/${id}`),
-    
-    
-    updateStatus: (id: string, data: { status: string }) =>
-      fetcher(`/orders/status/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      }),
+      fetcher("/orders", { method: "POST", body: JSON.stringify(data) }), // POST /api/orders
+    getMyOrders: () => fetcher("/orders"), // GET /api/orders (কাস্টমারের নিজের অর্ডারগুলো)
+    getOrderById: (id: string) => fetcher(`/orders/${id}`), // GET /api/orders/:id
   },
 
-  admin: {
-    getAllUsers: () => fetcher("/admin/users"),
-    
-    // ✅ এখানেও একই পরিবর্তন করা হয়েছে
-    updateOrderStatus: (id: string, data: { status: string }) =>
-      fetcher(`/admin/orders/${id}`, {
+  // 4️⃣ Seller Management (রিকোয়ারমেন্ট শিটের টেবিল অনুযায়ী ফিক্সড)
+  seller: {
+    addMedicine: (data: FormData) =>
+      fetcher("/seller/medicines", { method: "POST", body: data }, true), // POST /api/seller/medicines
+    updateMedicine: (id: string, data: FormData) =>
+      fetcher(`/seller/medicines/${id}`, { method: "PUT", body: data }, true), // PUT /api/seller/medicines/:id
+    deleteMedicine: (id: string) =>
+      fetcher(`/seller/medicines/${id}`, { method: "DELETE" }), // DELETE /api/seller/medicines/:id
+    getOrders: () => fetcher("/seller/orders"), // GET /api/seller/orders
+    updateOrderStatus: (id: string, status: string) =>
+      fetcher(`/seller/orders/${id}`, {
         method: "PATCH",
-        body: JSON.stringify(data),
-      }),
+        body: JSON.stringify({ status }),
+      }), // PATCH /api/seller/orders/:id
+  },
+
+  // 5️⃣ Admin Management
+  admin: {
+    getAllUsers: () => fetcher("/admin/users"), // GET /api/admin/users
+    updateUserStatus: (id: string, status: string) =>
+      fetcher(`/admin/users/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }), // PATCH /api/admin/users/:id
   },
 };
