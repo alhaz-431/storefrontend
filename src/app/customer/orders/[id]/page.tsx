@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
-  Package, Calendar, MapPin, 
-  ArrowLeft, CheckCircle2, 
-  Clock, Star, Phone, Hash, CreditCard, Loader2, AlertCircle
+  Package, MapPin, ArrowLeft, CheckCircle2, 
+  Clock, Star, Phone, CreditCard, Loader2, AlertCircle
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
@@ -23,26 +22,28 @@ interface OrderItem {
 }
 
 export default function OrderDetails() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id as string; // 🛡️ টাইপস্ক্রিপ্ট বিল্ড সেফ কাস্টিং
   const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false); // ক্যানসেল বাটনের নিজস্ব লোডার স্টেট
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     fetchOrderDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchOrderDetails = async () => {
     try {
-      const res = await api.orders.getOrderById(id as string);
+      const res = await api.orders.getOrderById(id);
       const data = res.data || res;
 
       const normalizedItems = (data.items || []).map((item: any, idx: number) => ({
         ...item,
         name: item.medicine?.name || item.name || "Unknown Medicine",
-        id: item.id || item.medicineId || `backup-id-${idx}` // Math.random() এর বদলে সেফ ইউনিক কি ব্যাকআপ
+        id: item.id || item.medicineId || `backup-id-${idx}`
       }));
 
       setOrder({
@@ -50,7 +51,7 @@ export default function OrderDetails() {
         items: normalizedItems
       });
     } catch (err) {
-      console.error(err);
+      console.error("Order Details Fetch Error:", err);
       toast.error("অর্ডারের তথ্য পাওয়া যায়নি");
     } finally {
       setLoading(false);
@@ -66,9 +67,9 @@ export default function OrderDetails() {
     try {
       await api.orders.updateStatus(order.id, { status: "CANCELLED" });
       toast.success("Order Cancelled Successfully", { id: toastId });
-      await fetchOrderDetails(); // ডাটা রি-ফেচ করে স্টেট আপডেট
+      await fetchOrderDetails(); // রিয়েল-টাইম স্টেট রি-ফেচ
     } catch (error: any) {
-      console.error(error);
+      console.error("Cancel Order Error:", error);
       toast.error(error?.message || "Something went wrong", { id: toastId });
     } finally {
       setCancelling(false);
@@ -92,7 +93,6 @@ export default function OrderDetails() {
 
   const steps = ["PLACED", "PROCESSING", "SHIPPED", "DELIVERED"];
   
-  // 🛡️ CANCELLED হলে কাস্টম সেফ ইনডেক্স লজিক (ইউআই ক্র্যাশ প্রোটেকশন)
   const isCancelled = order.status === "CANCELLED";
   const currentStep = isCancelled ? -1 : steps.indexOf(order.status?.toUpperCase());
   const progressWidth = isCancelled ? 0 : (currentStep / (steps.length - 1)) * 100;
@@ -114,7 +114,7 @@ export default function OrderDetails() {
               Order <span className="text-emerald-500">Summary</span>
             </h1>
             <p className="text-emerald-500/40 text-[10px] font-black uppercase tracking-[0.4em] mt-4">
-              Reference: {order.orderNumber || order.id.substring(0, 7).toUpperCase()}
+              Reference: {order.orderNumber || (order.id ? order.id.substring(0, 7).toUpperCase() : "UNKNOWN")}
             </p>
           </div>
           

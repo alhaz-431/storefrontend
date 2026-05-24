@@ -9,7 +9,7 @@ import Link from "next/link";
 
 interface Order {
   id: string;
-  orderNumber?: string; // অপশনাল সেফটি
+  orderNumber?: string;
   status: string;
   totalAmount: number;
   shippingAddress: string;
@@ -21,7 +21,7 @@ interface Order {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cancellingId, setCancellingId] = useState<string | null>(null); // ওর্ডার ক্যানসেলের জন্য আলাদা লোডার স্টেট
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -32,7 +32,7 @@ export default function OrdersPage() {
     try {
       const res = await api.orders.getMyOrders();
       
-      // 🛡️ ১০০% সেফ ডেটা অ্যাসাইনমেন্ট (অ্যারে কিনা তা নিশ্চিত করা হচ্ছে)
+      // 🛡️ ১০০% সেফ ডেটা অ্যাসাইনমেন্ট
       if (res && Array.isArray(res.data)) {
         setOrders(res.data);
       } else if (Array.isArray(res)) {
@@ -43,7 +43,7 @@ export default function OrdersPage() {
     } catch (error: any) {
       console.error("Fetch Orders Error:", error);
       toast.error("Failed to load orders");
-      setOrders([]); // এরর খেলেও স্টেট সেফ রাখার জন্য খালি অ্যারে
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -52,20 +52,20 @@ export default function OrdersPage() {
   const handleCancelOrder = async (orderId: string) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     
-    setCancellingId(orderId); // নির্দিষ্ট বাটনে লোডার অন করা হলো
+    setCancellingId(orderId);
     const toastId = toast.loading("Cancelling your order...");
     
     try {
-      // ব্যাকএন্ড কাস্টম রাউট অনুযায়ী স্ট্যাটাস আপডেট
+      // ব্যাকএন্ড কাস্টম রাউট অনুযায়ী স্ট্যাটাস আপডেট
       await api.orders.updateStatus(orderId, { status: "CANCELLED" }); 
       toast.success("Order cancelled successfully", { id: toastId });
-      await fetchOrders(); // নতুন লিস্ট রি-ফেচ করা
+      await fetchOrders(); // নতুন লিস্ট রি-ফেচ
     } catch (error: any) {
       console.error("Cancel Order Error:", error);
       const errMsg = error.response?.data?.message || error.message || "Could not cancel order";
       toast.error(errMsg, { id: toastId });
     } finally {
-      setCancellingId(null); // লোডার অফ
+      setCancellingId(null);
     }
   };
 
@@ -126,7 +126,8 @@ export default function OrdersPage() {
           <div className="bg-white border border-slate-200 rounded-[32px] p-16 md:p-24 text-center shadow-sm">
             <Package className="mx-auto mb-4 text-slate-300" size={56} />
             <p className="text-slate-400 uppercase font-black text-[10px] tracking-widest">No orders found yet</p>
-            <Link href="/customer/shop" className="mt-6 inline-block bg-emerald-600 text-white px-8 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md shadow-emerald-50">
+            {/* 🎯 ফিক্স: ভুল রাউট সংশোধন করে গ্লোবাল /shop পাথ দেওয়া হলো */}
+            <Link href="/shop" className="mt-6 inline-block bg-emerald-600 text-white px-8 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md shadow-emerald-50">
               Start Shopping
             </Link>
           </div>
@@ -151,9 +152,9 @@ export default function OrdersPage() {
                       <span className="text-[9px] font-black px-2 py-0.5 bg-slate-900 text-white uppercase rounded">Order #{index + 1}</span>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{formatDate(order.createdAt)}</span>
                     </div>
-                    {/* 💡 orderNumber না থাকলে আইডির প্রথম ৭টা ডিজিট শো করবে ব্যাকআপ হিসেবে */}
+                    {/* 🛡️ সেফটি চেক সহ আইডি সাবস্ট্রিং জেনারেট */}
                     <h3 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">
-                      Ref: {order.orderNumber || order.id.substring(0, 7).toUpperCase()}
+                      Ref: {order.orderNumber || (order.id ? order.id.substring(0, 7).toUpperCase() : "UNKNOWN")}
                     </h3>
                   </div>
 

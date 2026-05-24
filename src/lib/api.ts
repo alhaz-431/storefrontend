@@ -1,6 +1,6 @@
-// src/lib/api.ts
 
-// ✅ রিকোয়ারমেন্ট অনুযায়ী মেইন বেস ইউআরএল ফিক্সড (ভুল env মান এড়াতে সরাসরি দেওয়া হলো)
+
+
 const BASE_URL = "https://storemedistore.onrender.com/api";
 
 // 🔑 Token getter
@@ -58,9 +58,9 @@ const fetcher = async (
   }
 };
 
-// 📦 API Object (আপনার সব পেজের পুরনো মেথড এবং অফিশিয়াল শিট দুটোর সাথেই ১০০% সামঞ্জস্যপূর্ণ)
+
 export const api = {
-  // 1️⃣ Authentication
+  
   auth: {
     login: async (data: any) => {
       const res = await fetcher("/auth/login", {
@@ -84,12 +84,12 @@ export const api = {
     getMe: () => fetcher("/auth/me"), 
   },
 
-  // 2️⃣ Medicines & Categories (Public)
+  
   medicines: {
-    getAll: () => fetcher("/medicines"), // GET /api/medicines
-    getById: (id: string) => fetcher(`/medicines/${id}`), // GET /api/medicines/:id
+    getAll: () => fetcher("/medicines"), 
+    getById: (id: string) => fetcher(`/medicines/${id}`), 
     
-    // 💡 medicines পেজের বিল্ড এরর ফিক্স করার ব্যাকআপ মেথড:
+  
     create: (data: FormData) => 
       fetcher("/seller/medicines", { method: "POST", body: data }, true),
     update: (id: string, data: FormData) => 
@@ -105,10 +105,10 @@ export const api = {
   orders: {
     create: (data: any) =>
       fetcher("/orders", { method: "POST", body: JSON.stringify(data) }), // POST /api/orders
-    getMyOrders: () => fetcher("/orders"), // GET /api/orders (কাস্টমারের নিজের অর্ডার)
+    getMyOrders: () => fetcher("/orders"),
     getOrderById: (id: string) => fetcher(`/orders/${id}`), // GET /api/orders/:id
     
-    // 💡 seller/orders/page.tsx ফাইলের ১৯ নম্বর লাইনের এরর ফিক্স করার ব্যাকআপ মেথড:
+    
     getAllOrders: () => fetcher("/seller/orders"), 
     updateStatus: (id: string, data: { status: string }) =>
       fetcher(`/seller/orders/${id}`, {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Phone, User, ArrowRight, CreditCard, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { api } from "@/lib/api"; // 👑 ভুল env বা ইউআরএল এড়াতে আপনার গ্লোবাল api.ts ইমপোর্ট করা হলো
 
 interface CartItem {
   id: string;         
@@ -89,24 +90,12 @@ export default function CheckoutPage() {
 
       console.log("Sending clean payload to backend:", orderData);
 
-      // 🔑 লোকাল স্টোরেজ থেকে অথেনটিকেশন টোকেন নেওয়া
-      const token = localStorage.getItem("token");
-
-      // 📡 সরাসরি নেটিভ ফেচ (Fetch) দিয়ে সিকিউর হেডার সহ ব্যাকএন্ডে হিট করা
-      const response = await fetch("https://storemedistore.onrender.com/api/v1/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // 👈 ব্যাকএন্ড মিডলওয়্যার লক ভাঙার আসল চাবিকাঠি
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      const resData = await response.json();
+      // ✅ হার্ডকোডেড /api/v1/orders এর বদলে সরাসরি আপনার api.ts এর মেথডে ডেটা পাঠানো হলো
+      const resData = await api.orders.create(orderData);
       console.log("Backend Response Actual Data:", resData);
 
       // 💡 সাকসেস রেসপন্স আসলে ক্লিয়ারেন্স ও রিডাইরেকশন শুরু হবে
-      if (response.ok || resData.success) {
+      if (resData) {
         // ১. কার্ট লোকাল স্টোরেজ থেকে সাকসেসফুলি ক্লিয়ার করা
         localStorage.removeItem("medistore_cart");
         
@@ -123,7 +112,7 @@ export default function CheckoutPage() {
         }, 100);
         
       } else {
-        throw new Error(resData.message || resData.error || "অর্ডার প্রসেস করা সম্ভব হয়নি");
+        throw new Error("অর্ডার প্রসেস করা সম্ভব হয়নি");
       }
     } catch (error: any) {
       console.error("Detailed Checkout Error Object:", error);

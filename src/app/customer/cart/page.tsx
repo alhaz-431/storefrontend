@@ -16,10 +16,10 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ১. লগইন থাকা ইউজারের ইনফো নেওয়া হচ্ছে
+    // ১. লগইন থাকা ইউজারের ইনফো নেওয়া হচ্ছে
     const userStr = localStorage.getItem("medistore_user");
     
-    // 🎯 ফিক্স: চেকআউট পেজের সাথে সিঙ্ক রাখার জন্য স্ট্যান্ডার্ড গ্লোবাল কী ব্যবহার করা সবচেয়ে নিরাপদ
+    // 🎯 ফিক্স: চেকআউট পেজের সাথে সিঙ্ক রাখার জন্য স্ট্যান্ডার্ড গ্লোবাল কী ব্যবহার করা সবচেয়ে নিরাপদ
     let storageKey = "medistore_cart"; 
 
     if (userStr) {
@@ -48,8 +48,8 @@ export default function CartPage() {
     } else {
       setCart([]); 
     }
-    setLoading(false);
-  }, [router]);
+    loading && setLoading(false);
+  }, [router, loading]);
 
   const updateLocalStorage = (updatedCart: any[]) => {
     setCart(updatedCart);
@@ -111,7 +111,7 @@ export default function CartPage() {
           <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Your cart is empty</h2>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 mb-6">Looks like you haven't added any medicines yet.</p>
           
-          {/* 🎯 ফিক্স: ভুল রুট সংশোধন করে সঠিক মেইন শপ পেজ লিংক অ্যাড করা হলো */}
+          {/* 🎯 ফিক্স: সঠিক মেইন শপ পেজ লিংক */}
           <button 
             onClick={() => router.push("/shop")}
             className="bg-emerald-600 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100"
@@ -130,7 +130,6 @@ export default function CartPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
-            {/* 🎯 ফিক্স: কন্টিনিউ শপিং বাটনকেও মেইন শপে রিডাইরেক্ট করা হলো */}
             <button onClick={() => router.push("/shop")} className="flex items-center 
             gap-1.5 text-slate-400 hover:text-slate-900 transition-colors mb-2 text-[10px] font-black uppercase tracking-wider">
               <ChevronLeft size={14} /> Continue Shopping
@@ -219,7 +218,7 @@ export default function CartPage() {
               <div className="space-y-4">
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Items Cost</span>
-                  <span className="font-black text-slate-800">৳{subtotal.toFixed(2)}</span>
+                  <span className="font-black text-slate-800">৳{Number(subtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Delivery Fee</span>
@@ -228,12 +227,13 @@ export default function CartPage() {
                 <div className="h-[1px] bg-slate-100 w-full" />
                 <div className="flex justify-between items-end pt-2">
                   <span className="font-black text-emerald-600 uppercase text-[10px] tracking-wider mb-0.5">Total Payable</span>
-                  <span className="text-3xl font-black text-slate-900 tracking-tight">৳{subtotal.toFixed(2)}</span>
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">৳{Number(subtotal || 0).toFixed(2)}</span>
                 </div>
               </div>
 
+              {/* 🎯 ফিক্স: রাউট ডিরেক্টরি অনুযায়ী সেফলি রিডাইরেকশন সেট করা হলো */}
               <button 
-                onClick={() => router.push("/customer/checkout")}
+                onClick={() => router.push("/checkout")}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-50 uppercase tracking-widest text-xs"
               >
                 Checkout Now

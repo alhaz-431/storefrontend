@@ -1,4 +1,4 @@
-// ১. ইউজারের রোল এবং ডাটা টাইপ
+
 export type UserRole = "ADMIN" | "SELLER" | "CUSTOMER";
 
 export interface User {
