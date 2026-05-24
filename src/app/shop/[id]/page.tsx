@@ -6,28 +6,39 @@ import { ShoppingCart, ArrowLeft, Pill } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
+type Medicine = {
+  id: string;
+  name: string;
+  price: number;
+  manufacturer: string;
+  image?: string | null;
+  stock: number;
+  description: string;
+};
+
 export default function MedicineDetails() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
 
-  const [medicine, setMedicine] = useState<any>(null);
+  const [medicine, setMedicine] = useState<Medicine | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDetail = async () => {
       try {
         setLoading(true);
-        const res = await api.medicines.getAll();
+        const res = await api.medicines.getById(id);
+        console.log("🎒 Single Medicine Response:", res);
+
+        const foundData = res?.data || res;
         
-        // API রেসপন্স Array হলে সেটিই, নতুবা res.data
-        const medicinesList = Array.isArray(res) ? res : (res?.data || []);
-        
-        // আইডি ম্যাচিং (String কনভার্ট করে চেক করা হয়েছে যাতে কোনো এরর না হয়)
-        const found = medicinesList.find((m: any) => String(m.id) === String(id));
-        
-        setMedicine(found);
-      } catch (error) {
+        if (foundData && (foundData.id || foundData._id)) {
+          setMedicine(foundData);
+        } else {
+          setMedicine(null);
+        }
+      } catch (error: any) {
         console.error("Fetch Error:", error);
         toast.error("Failed to load medicine details");
       } finally {
@@ -43,17 +54,14 @@ export default function MedicineDetails() {
     if (typeof window === "undefined") return;
 
     const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
-    
-    // কার্টে আগে থেকেই এই প্রোডাক্ট আছে কিনা চেক করা (নিরাপদ আইডি ম্যাচিং)
     const existing = cart.find((item: any) => item.id === medicine.id || item.medicineId === medicine.id);
     
     if (existing) {
       existing.quantity += 1;
     } else {
-      // 🎯 চেকআউট পেজ এবং ব্যাকএন্ডের রিকোয়ারমেন্ট অনুযায়ী ক্লিন অবজেক্ট ম্যাপিং
       cart.push({
         id: medicine.id,
-        medicineId: medicine.id, // ব্যাকএন্ড অর্ডার কন্ট্রোলারের জন্য মোস্ট ইম্পর্ট্যান্ট
+        medicineId: medicine.id,
         name: medicine.name,
         price: Number(medicine.price),
         image: medicine.image || null,
@@ -62,88 +70,91 @@ export default function MedicineDetails() {
     }
     
     localStorage.setItem("medistore_cart", JSON.stringify(cart));
-    
-    // 🔔 গ্লোবাল ন্যাভবারের কার্ট কাউন্ট ইনস্ট্যান্টলি আপডেট করার কাস্টম ইভেন্ট
     window.dispatchEvent(new Event("cartUpdated"));
     
     toast.success(`${medicine.name} added to cart!`, {
       position: "bottom-right",
-      style: { background: "#10b981", color: "#fff", fontWeight: "900", borderRadius: "15px" }
+      style: { background: "#c5a880", color: "#021e17", fontWeight: "900", borderRadius: "15px" }
     });
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-[#050a0a] text-white italic font-black uppercase tracking-widest">Loading Details...</div>;
-  if (!medicine) return <div className="h-screen flex items-center justify-center bg-[#050a0a] text-white font-black uppercase tracking-widest">Product Not Found</div>;
+  if (loading) return <div className="h-[70vh] flex items-center justify-center text-[#c5a880] italic font-serif text-2xl font-black uppercase tracking-widest animate-pulse">Loading Details...</div>;
+  if (!medicine) return <div className="h-[70vh] flex items-center justify-center text-red-400 font-serif text-2xl font-black uppercase tracking-widest">Product Not Found</div>;
 
   return (
-    <div className="min-h-screen bg-[#050a0a] pb-20 selection:bg-emerald-500/30">
-      <div className="p-6 lg:p-20 max-w-6xl mx-auto text-white">
+    <div className="pb-24 selection:bg-[#c5a880]/30 text-slate-200">
+      <div className="max-w-6xl mx-auto pt-4">
         
-        {/* BACK BUTTON */}
+        {/* 🏛️ LUXURY BACK BUTTON */}
         <button 
           onClick={() => router.back()} 
-          className="flex items-center gap-2 text-slate-500 hover:text-emerald-500 mb-10 font-black uppercase text-[10px] tracking-widest transition-all group"
+          className="flex items-center gap-2 text-slate-400 hover:text-[#c5a880] mb-10 font-black uppercase text-[10px] tracking-[0.2em] transition-all group px-4 lg:px-0"
         >
-          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" /> Back to Shop
+          <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" /> Back to Apothecary
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center px-4 lg:px-0">
           
-          {/* 🖼️ LEFT SIDE: DYNAMIC IMAGE AREA */}
-          <div className="aspect-square bg-[#111827]/40 border border-white/5 rounded-[48px] flex items-center justify-center overflow-hidden shadow-2xl relative group">
+          {/* 🖼️ LEFT SIDE: PREMIUM IMAGE CONTAINER */}
+          <div className="aspect-square bg-gradient-to-b from-[#02231b]/60 to-[#01140f]/80 border border-[#c5a880]/15 rounded-[3rem] flex items-center justify-center overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative group p-8">
+            {/* Geometric Luxury Mesh Overlay */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(197,168,128,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(197,168,128,0.01)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
+
             {medicine.image ? (
               <img
                 src={medicine.image.startsWith('http') ? medicine.image : `/img/${medicine.image}`}
                 alt={medicine.name}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 relative z-10"
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-emerald-950/5">
-                <Pill size={80} className="text-emerald-500/10 mb-4 animate-pulse" />
-                <div className="text-emerald-500/20 font-black text-4xl italic uppercase select-none tracking-wider">MediStore</div>
+              <div className="w-full h-full flex flex-col items-center justify-center relative z-10">
+                <Pill size={70} className="text-[#c5a880]/20 mb-4 animate-bounce" />
+                <div className="text-[#c5a880]/10 font-black text-3xl font-serif italic uppercase tracking-wider">MediStore</div>
               </div>
             )}
             
-            {/* Stock Status Inside Image Corner */}
-            <div className="absolute top-6 right-6">
-              <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${medicine.stock > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20'}`}>
+            {/* Live Stock Status Indicator */}
+            <div className="absolute top-6 right-6 z-20">
+              <span className={`text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border backdrop-blur-md ${medicine.stock > 0 ? 'bg-[#022c22]/80 text-emerald-400 border-emerald-500/20' : 'bg-red-950/80 text-red-400 border-red-500/20'}`}>
                 {medicine.stock > 0 ? 'In Stock' : 'Out Of Stock'}
               </span>
             </div>
           </div>
 
-          {/* 📝 RIGHT SIDE: CONTENT INFOS */}
+          {/* 📝 RIGHT SIDE: LUXURY PRODUCT SPECIFICATIONS */}
           <div className="flex flex-col justify-center">
-            <p className="text-emerald-500 font-black uppercase text-[10px] tracking-[0.4em] mb-4">
+            <p className="text-[#c5a880] font-black uppercase text-[9px] tracking-[0.3em] mb-3">
               {medicine.manufacturer || "GLOBAL PHARMA"}
             </p>
-            <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-6 text-white group-hover:text-emerald-400 transition-colors">
+            <h1 className="text-4xl md:text-6xl font-black uppercase font-serif tracking-wide mb-6 text-white leading-tight">
               {medicine.name}
             </h1>
-            <p className="text-slate-400 mb-10 text-sm leading-relaxed font-medium">
-              {medicine.description || "No specific description available for this medicine. Please consult a registered doctor before use."}
+            <p className="text-slate-400 mb-10 text-sm leading-relaxed font-medium bg-[#01140f]/30 p-6 rounded-2xl border border-[#c5a880]/5">
+              {medicine.description || "No specific formulation description available for this curative token. Please consult a registered practitioner before final administration."}
             </p>
 
-            {/* PRICE & STOCK COUNTER */}
-            <div className="flex items-center gap-12 mb-10 bg-[#111827]/30 border border-white/5 p-6 rounded-3xl backdrop-blur-xl">
+            {/* Architectural Price & Stock Grid Info */}
+            <div className="grid grid-cols-2 gap-6 mb-10 bg-gradient-to-r from-[#02231b]/60 to-[#01140f]/40 border border-[#c5a880]/10 p-6 rounded-3xl backdrop-blur-md">
               <div className="flex flex-col">
-                <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1">Price Per Unit</span>
-                <span className="text-4xl font-black text-white tracking-tight">৳{medicine.price}</span>
+                <span className="text-[8px] text-[#c5a880] font-black uppercase tracking-widest mb-1">Price Per Unit</span>
+                <span className="text-3xl font-black text-white tracking-tight">৳{medicine.price}</span>
               </div>
-              <div className="h-10 w-[1px] bg-white/10" />
-              <div className="space-y-1">
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Available Stock</p>
-                <p className="font-black text-xl text-slate-200">{medicine.stock} <span className="text-xs font-bold text-slate-500">PCS</span></p>
+              
+              <div className="border-l border-[#c5a880]/10 pl-6 flex flex-col justify-center">
+                <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Available Reserve</span>
+                <p className="font-black text-xl text-slate-200">
+                  {medicine.stock} <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Units</span>
+                </p>
               </div>
             </div>
 
-            {/* ADD TO CART BUTTON */}
+            {/* Add To Cart Luxury Action Button */}
             <button 
               onClick={handleAdd}
               disabled={medicine.stock <= 0}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-20 disabled:cursor-not-allowed py-6 rounded-[24px] font-black uppercase text-xs tracking-widest transition-all shadow-2xl active:scale-98 flex items-center justify-center gap-4 text-black bg-emerald-500 hover:bg-white"
+              className="w-full bg-gradient-to-br from-[#c5a880] to-[#8a7355] hover:from-white hover:to-slate-100 disabled:opacity-10 disabled:cursor-not-allowed py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all duration-300 shadow-[0_15px_40px_rgba(0,0,0,0.5)] active:scale-[0.98] flex items-center justify-center gap-3 text-[#021e17] group"
             >
-              Add to Shopping Cart <ShoppingCart size={18} fill="black" />
+              Add to Shopping Cart <ShoppingCart size={16} fill="#021e17" className="group-hover:scale-110 transition-transform" />
             </button>
           </div>
 
