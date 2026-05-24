@@ -58,7 +58,7 @@ const fetcher = async (
   }
 };
 
-// 📦 API Object (অ্যাসাইনমেন্টের অফিশিয়াল শিট অনুযায়ী কাঁটায় কাঁটায় ম্যাচড)
+// 📦 API Object (অ্যাসাইনমেন্টের অফিশিয়াল শিট এবং আপনার পেজের কোড দুইটার সাথেই ম্যাচড)
 export const api = {
   // 1️⃣ Authentication
   auth: {
@@ -88,6 +88,14 @@ export const api = {
   medicines: {
     getAll: () => fetcher("/medicines"), // GET /api/medicines
     getById: (id: string) => fetcher(`/medicines/${id}`), // GET /api/medicines/:id
+    
+    // 💡 আপনার পেজের বিল্ড এরর ফিক্স করার জন্য ব্যাকআপ মেথড (রিকোয়ারমেন্ট এন্ডপয়েন্ট অনুযায়ী ফিক্সড):
+    create: (data: FormData) => 
+      fetcher("/seller/medicines", { method: "POST", body: data }, true),
+    update: (id: string, data: FormData) => 
+      fetcher(`/seller/medicines/${id}`, { method: "PUT", body: data }, true),
+    delete: (id: string) => 
+      fetcher(`/seller/medicines/${id}`, { method: "DELETE" }),
   },
   categories: {
     getAll: () => fetcher("/categories"), // GET /api/categories
@@ -101,7 +109,7 @@ export const api = {
     getOrderById: (id: string) => fetcher(`/orders/${id}`), // GET /api/orders/:id
   },
 
-  // 4️⃣ Seller Management (রিকোয়ারমেন্ট শিটের টেবিল অনুযায়ী ফিক্সড)
+  // 4️⃣ Seller Management (রিকোয়ারমেন্ট শিটের অফিশিয়াল অবজেক্ট স্ট্রাকচার)
   seller: {
     addMedicine: (data: FormData) =>
       fetcher("/seller/medicines", { method: "POST", body: data }, true), // POST /api/seller/medicines
