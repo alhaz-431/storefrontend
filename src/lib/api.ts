@@ -13,14 +13,26 @@ const fetcher = async (endpoint: string, options: RequestInit = {}, isFormData =
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
-  if (res.status === 401) { if (typeof window !== "undefined") localStorage.removeItem("token"); throw new Error("Unauthorized"); }
-  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "API failed"); }
+  if (res.status === 401) { 
+    if (typeof window !== "undefined") localStorage.removeItem("token"); 
+    throw new Error("Unauthorized"); 
+  }
+  if (!res.ok) { 
+    const err = await res.json().catch(() => ({})); 
+    throw new Error(err.message || "API failed"); 
+  }
   return res.json();
 };
 
 export const api = {
   auth: { 
-    login: async (data: any) => { const res = await fetcher("/auth/login", { method: "POST", body: JSON.stringify(data) }); if (res.token) localStorage.setItem("token", res.token); return res; } 
+    login: async (data: any) => { 
+      const res = await fetcher("/auth/login", { method: "POST", body: JSON.stringify(data) }); 
+      if (res.token) localStorage.setItem("token", res.token); 
+      return res; 
+    },
+    getMe: () => fetcher("/auth/me"),
+    updateProfile: (data: any) => fetcher("/auth/profile", { method: "PATCH", body: JSON.stringify(data) })
   },
   orders: {
     create: (data: any) => fetcher("/orders", { method: "POST", body: JSON.stringify(data) }),
@@ -29,9 +41,9 @@ export const api = {
     getOrderById: (id: string) => fetcher(`/orders/${id}`),
     updateStatus: (id: string, status: string) => fetcher(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   },
-  // 🎯 এই অংশটুকু নিশ্চিত করুন:
   medicines: { 
-    getAll: () => fetcher("/medicines") 
+    getAll: () => fetcher("/medicines"),
+    getById: (id: string) => fetcher(`/medicines/${id}`)
   },
   seller: {
     addMedicine: (data: FormData) => fetcher("/seller/medicines", { method: "POST", body: data }, true),

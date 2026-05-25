@@ -6,14 +6,14 @@ import { Plus, Trash2, Edit3, Search, X, Package, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
-const BASE_URL = "https://storemedistore.onrender.com";
-
 interface Medicine {
   id: string;
   name: string;
-  category: { name: string; id: string } | any;
+  category?: { name: string; id: string } | any;
   price: number;
   stock: number;
+  manufacturer?: string;
+  description?: string;
   image?: string;
 }
 
@@ -50,7 +50,10 @@ export default function SellerMedicines() {
     }
   };
 
-  useEffect(() => { fetchMedicines(); }, []);
+  useEffect(() => {
+    fetchMedicines();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -58,16 +61,50 @@ export default function SellerMedicines() {
     setFormData(defaultFormData);
   };
 
+  // এডিটিং এর সময় ফর্মের ফিল্ডগুলো পপুলেট করার ফাংশন
+  const handleEditClick = (med: Medicine) => {
+    setEditingMedicine(med);
+    setFormData({
+      name: med.name,
+      price: String(med.price),
+      stock: String(med.stock),
+      manufacturer: med.manufacturer || "",
+      categoryId: med.category?.id || "084c61a7-730d-427c-8011-0675cdfd8434",
+      description: med.description || "",
+      imageFile: null, // ফাইল ইনপুট নতুন করে আপলোডের জন্য খালি থাকবে
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    const toastId = toast.loading("Deleting...");
+    try {
+      await api.seller.deleteMedicine(id);
+      toast.success("Deleted successfully!", { id: toastId });
+      fetchMedicines();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete", { id: toastId });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const toastId = toast.loading("Saving...");
+    const toastId = toast.loading(editingMedicine ? "Updating..." : "Adding...");
+    
     try {
       const data = new FormData();
+      // টাইপসেফ উপায়ে FormData অ্যাপেন্ড করা
       Object.entries(formData).forEach(([key, value]) => {
-        if (key !== 'imageFile' && value) data.append(key, value as string);
+        if (key !== "imageFile" && value !== null && value !== undefined) {
+          data.append(key, String(value));
+        }
       });
-      if (formData.imageFile) data.append("image", formData.imageFile);
+      
+      if (formData.imageFile) {
+        data.append("image", formData.imageFile);
+      }
 
       if (editingMedicine) {
         await api.seller.updateMedicine(editingMedicine.id, data);
@@ -85,72 +122,178 @@ export default function SellerMedicines() {
     }
   };
 
-  const filtered = medicines.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = medicines.filter((m) =>
+    m.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 p-4 md:p-10 font-sans">
       <div className="max-w-7xl mx-auto">
+        
+        {/* HEADER */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-black text-slate-900">Inventory <span className="text-[#008249]">Management</span></h1>
+          <h1 className="text-3xl font-black text-slate-900">
+            Inventory <span className="text-[#008249]">Management</span>
+          </h1>
           <button 
-            onClick={() => { setEditingMedicine(null); setIsModalOpen(true); }} 
-            className="bg-[#008249] hover:bg-[#006633] text-white px-6 py-3 rounded-xl font-bold transition-all"
+            onClick={() => { setEditingMedicine(null); setFormData(defaultFormData); setIsModalOpen(true); }} 
+            className="bg-[#008249] hover:bg-[#006633] text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md shadow-[#008249]/10"
           >
             + Add Product
           </button>
         </div>
 
+        {/* SEARCH BAR */}
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input 
-            type="text" placeholder="Search medicines..." 
-            className="w-full p-4 pl-12 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#008249]/20 focus:border-[#008249] outline-none"
-            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            type="text" 
+            placeholder="Search medicines..." 
+            className="w-full p-4 pl-12 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#008249]/20 focus:border-[#008249] outline-none transition-all"
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
+        {/* TABLE SECTION */}
         <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-[#E6F4ED] text-[#008249] uppercase text-[10px] font-black">
-                <th className="px-8 py-4">Product</th>
-                <th className="px-8 py-4">Price</th>
-                <th className="px-8 py-4">Stock</th>
-                <th className="px-8 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fetching ? <tr><td colSpan={4} className="py-20 text-center text-[#008249]"><Loader2 className="animate-spin inline" /></td></tr> :
-               filtered.map((med) => (
-                <tr key={med.id} className="border-b border-slate-50 hover:bg-slate-50">
-                  <td className="px-8 py-4 flex items-center gap-3 font-bold">{med.name}</td>
-                  <td className="px-8 py-4 text-slate-600">৳{med.price}</td>
-                  <td className="px-8 py-4 text-slate-600">{med.stock}</td>
-                  <td className="px-8 py-4 text-right space-x-2">
-                    <button onClick={() => { setEditingMedicine(med); setIsModalOpen(true); }} className="text-blue-600 hover:text-blue-800"><Edit3 size={18} /></button>
-                    <button onClick={() => api.seller.deleteMedicine(med.id).then(fetchMedicines)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#E6F4ED] text-[#008249] uppercase text-[10px] font-black tracking-wider">
+                  <th className="px-8 py-4">Product</th>
+                  <th className="px-8 py-4">Price</th>
+                  <th className="px-8 py-4">Stock</th>
+                  <th className="px-8 py-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {fetching ? (
+                  <tr>
+                    <td colSpan={4} className="py-20 text-center text-[#008249]">
+                      <Loader2 className="animate-spin inline" size={28} />
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-20 text-center text-slate-400 font-medium">
+                      No medicines found in inventory.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((med) => (
+                    <tr key={med.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
+                      <td className="px-8 py-4 flex items-center gap-3 font-bold text-slate-900">{med.name}</td>
+                      <td className="px-8 py-4 text-slate-600 font-medium">৳{med.price}</td>
+                      <td className="px-8 py-4 text-slate-600 font-medium">{med.stock}</td>
+                      <td className="px-8 py-4 text-right space-x-3">
+                        <button 
+                          onClick={() => handleEditClick(med)} 
+                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                        >
+                          <Edit3 size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteClick(med.id)} 
+                          className="text-red-600 hover:text-red-800 transition-colors p-1"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
+      {/* DIALOG / MODAL */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <motion.form onSubmit={handleSubmit} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-8 rounded-[2rem] w-full max-w-lg space-y-4 shadow-2xl">
-              <h2 className="text-xl font-black text-slate-900">{editingMedicine ? 'Edit Product' : 'Add New Product'}</h2>
-              <input required className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl" placeholder="Medicine Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-              <div className="grid grid-cols-2 gap-4">
-                <input required type="number" className="p-4 bg-slate-50 border border-slate-100 rounded-xl" placeholder="Price" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
-                <input required type="number" className="p-4 bg-slate-50 border border-slate-100 rounded-xl" placeholder="Stock" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <motion.form 
+              onSubmit={handleSubmit} 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white p-8 rounded-[2rem] w-full max-w-lg space-y-4 shadow-2xl relative"
+            >
+              <button 
+                type="button" 
+                onClick={closeModal} 
+                className="absolute right-6 top-6 text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+
+              <h2 className="text-xl font-black text-slate-900 mb-2">
+                {editingMedicine ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Medicine Name</label>
+                <input 
+                  required 
+                  className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none" 
+                  placeholder="e.g. Napa Extend" 
+                  value={formData.name} 
+                  onChange={e => setFormData({...formData, name: e.target.value})} 
+                />
               </div>
-              <input type="file" className="w-full p-2 border rounded-xl" onChange={e => setFormData({...formData, imageFile: e.target.files?.[0] || null})} />
-              <div className="flex gap-3 mt-4">
-                <button type="button" onClick={closeModal} className="w-full py-3 bg-slate-100 rounded-xl font-bold">Cancel</button>
-                <button type="submit" className="w-full py-3 bg-[#008249] text-white rounded-xl font-bold">Save Product</button>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Price (৳)</label>
+                  <input 
+                    required 
+                    type="number" 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none" 
+                    placeholder="0.00" 
+                    value={formData.price} 
+                    onChange={e => setFormData({...formData, price: e.target.value})} 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Stock Qty</label>
+                  <input 
+                    required 
+                    type="number" 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none" 
+                    placeholder="0" 
+                    value={formData.stock} 
+                    onChange={e => setFormData({...formData, stock: e.target.value})} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Product Image</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  className="w-full p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-[#E6F4ED] file:text-[#008249] hover:file:bg-[#d2ebd9] file:cursor-pointer" 
+                  onChange={e => setFormData({...formData, imageFile: e.target.files?.[0] || null})} 
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button" 
+                  onClick={closeModal} 
+                  className="w-full py-4 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full py-4 bg-[#008249] hover:bg-[#006633] text-white rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading && <Loader2 className="animate-spin" size={18} />}
+                  {editingMedicine ? 'Update Product' : 'Save Product'}
+                </button>
               </div>
             </motion.form>
           </div>
