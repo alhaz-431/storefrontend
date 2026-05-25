@@ -16,11 +16,10 @@ export default function SellerOrders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // api.orders.getAllOrders টি api.ts থেকে আসছে
       const data = await api.orders.getAllOrders();
       setOrders(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      toast.error(error.message || "অর্ডার লিস্ট লোড করা যায়নি");
+      toast.error(error.message || "অর্ডার লিস্ট লোড করা যায়নি");
     } finally {
       setLoading(false);
     }
@@ -33,42 +32,33 @@ export default function SellerOrders() {
   const updateStatus = async (orderId: string, status: string) => {
     const toastId = toast.loading("আপডেট হচ্ছে...");
     try {
-      // api.ts এ আমরা updateStatus: (id, status) রেখেছি, তাই এখানে status পাঠাচ্ছি
       await api.orders.updateStatus(orderId, status); 
-      
       toast.success(`অর্ডার এখন ${status}`, { id: toastId });
-      
       setOrders((prevOrders) => 
         prevOrders.map((order: any) => 
           order.id === orderId ? { ...order, status: status } : order
         )
       );
     } catch (error: any) {
-      toast.error(error.message || "আপডেট ব্যর্থ হয়েছে", { id: toastId });
+      toast.error("আপডেট ব্যর্থ হয়েছে", { id: toastId });
     }
   };
 
-  const filteredOrders = orders.filter((order: any) =>
-    order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.id?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-4 md:p-10 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 p-4 md:p-10 font-sans">
       <div className="max-w-6xl mx-auto">
         <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">
-              Order <span className="text-emerald-600">Logistics</span>
+              Order <span className="text-[#008249]">Logistics</span>
             </h1>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Management Dashboard</p>
           </div>
-          <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-[#E6F4ED] shadow-sm">
             <div className="text-right">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Total Active Orders</p>
-              <p className="text-2xl font-black text-emerald-600 leading-none">{orders.length}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase">Active Orders</p>
+              <p className="text-2xl font-black text-[#008249]">{orders.length}</p>
             </div>
-            <div className="bg-emerald-50 p-2 rounded-xl text-emerald-600">
+            <div className="bg-[#E6F4ED] p-2 rounded-xl text-[#008249]">
               <Package size={24} />
             </div>
           </div>
@@ -79,7 +69,7 @@ export default function SellerOrders() {
           <input 
             type="text"
             placeholder="Search by Customer Name or ID..."
-            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-16 pr-6 outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-sm shadow-sm"
+            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-16 pr-6 outline-none focus:ring-2 focus:ring-[#008249]/20 focus:border-[#008249] transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -87,23 +77,21 @@ export default function SellerOrders() {
 
         <div className="space-y-6">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-32">
-              <RefreshCcw className="animate-spin text-emerald-500 mb-4" size={40} />
-            </div>
+            <div className="flex justify-center py-32"><RefreshCcw className="animate-spin text-[#008249]" size={40} /></div>
           ) : (
             <AnimatePresence>
-              {filteredOrders.map((order: any) => (
-                <motion.div key={order.id} className="bg-white border p-8 rounded-[2rem] shadow-sm">
+              {orders.map((order: any) => (
+                <motion.div key={order.id} className="bg-white border border-slate-100 p-8 rounded-[2rem] shadow-sm">
                   <div className="flex justify-between items-center mb-6 border-b pb-4">
                     <span className="text-[10px] font-black uppercase text-slate-400">ID: #{order.id?.slice(-8)}</span>
-                    <span className="px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black">{order.status}</span>
+                    <span className="px-4 py-1 bg-[#E6F4ED] text-[#008249] rounded-full text-[10px] font-black">{order.status}</span>
                   </div>
-                  <div className="grid lg:grid-cols-3 gap-8">
+                  <div className="grid lg:grid-cols-3 gap-8 items-center">
                     <div>
                       <h3 className="font-bold text-lg">{order.customer?.name || "Customer"}</h3>
                       <p className="text-xs text-slate-400">{order.customer?.email}</p>
                     </div>
-                    <div className="font-black text-xl">৳{order.totalAmount}</div>
+                    <div className="font-black text-xl text-slate-900">৳{order.totalAmount}</div>
                     <div className="flex gap-2 flex-wrap">
                       <StatusBtn onClick={() => updateStatus(order.id, "PENDING")} icon={<Clock size={14}/>} label="Pending" active={order.status === "PENDING"} />
                       <StatusBtn onClick={() => updateStatus(order.id, "SHIPPED")} icon={<Truck size={14}/>} label="Shipped" active={order.status === "SHIPPED"} />
@@ -122,7 +110,14 @@ export default function SellerOrders() {
 
 function StatusBtn({ onClick, icon, label, active }: any) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-2 py-2 px-3 rounded-lg border text-[10px] font-bold uppercase ${active ? 'bg-emerald-600 text-white' : 'bg-white border-slate-200'}`}>
+    <button 
+      onClick={onClick} 
+      className={`flex items-center gap-2 py-2 px-3 rounded-lg border text-[10px] font-bold uppercase transition-all ${
+        active 
+        ? 'bg-[#008249] text-white border-[#008249]' 
+        : 'bg-white text-slate-600 border-slate-200 hover:border-[#008249] hover:text-[#008249]'
+      }`}
+    >
       {icon} {label}
     </button>
   );

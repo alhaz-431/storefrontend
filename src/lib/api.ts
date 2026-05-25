@@ -3,7 +3,6 @@ const BASE_URL = "https://storemedistore.onrender.com/api";
 const getCleanToken = () => {
   if (typeof window === "undefined") return null;
   const token = localStorage.getItem("token");
-  // যদি টোকেন থাকে তবে তা থেকে ডাবল কোটেশন রিমুভ করে ক্লিন টোকেন রিটার্ন করবে
   return token ? token.replace(/^"|"$/g, '').replace(/['"]+/g, '') : null;
 };
 
@@ -11,6 +10,7 @@ const fetcher = async (endpoint: string, options: RequestInit = {}, isFormData =
   const token = getCleanToken();
   const headers = new Headers(options.headers || {});
 
+  // FormData হলে Content-Type সেট করবেন না, ব্রাউজার নিজেই তা হ্যান্ডেল করবে
   if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -42,7 +42,6 @@ export const api = {
         method: "POST", 
         body: JSON.stringify(data) 
       });
-      // টোকেন সেভ করার সময় JSON.stringify করবেন না, কারণ এটি সরাসরি স্ট্রিং
       if (res.token) localStorage.setItem("token", res.token);
       return res;
     },
@@ -58,5 +57,18 @@ export const api = {
         method: "PATCH", 
         body: JSON.stringify({ status }) 
       }),
+  },
+  // নতুন যোগ করা অবজেক্টসমূহ
+  medicines: {
+    getAll: () => fetcher("/medicines"),
+  },
+  seller: {
+    addMedicine: (data: FormData) => 
+      fetcher("/seller/medicines", { method: "POST", body: data }, true),
+    updateMedicine: (id: string, data: FormData) => 
+      fetcher(`/seller/medicines/${id}`, { method: "PATCH", body: data }, true),
+    deleteMedicine: (id: string) => 
+      fetcher(`/seller/medicines/${id}`, { method: "DELETE" }),
   }
 };
+

@@ -21,84 +21,33 @@ export default function Navbar() {
         const userStr = localStorage.getItem("medistore_user");
         const cartStr = localStorage.getItem("medistore_cart");
 
-        // 🛡️ নিখুঁত লগইন ভ্যালিডেশন চেক
         if (token && userStr) {
           const user = JSON.parse(userStr);
-          if (user && user.role) {
-            setIsLoggedIn(true);
-            setIsAdmin(user.role.toUpperCase() === "ADMIN");
-          } else {
-            setIsLoggedIn(false);
-            setIsAdmin(false);
-          }
+          setIsLoggedIn(true);
+          setIsAdmin(user.role?.toUpperCase() === "ADMIN");
         } else {
-          
           setIsLoggedIn(false);
           setIsAdmin(false);
         }
 
-     
         if (cartStr) {
           const cart = JSON.parse(cartStr);
-          if (Array.isArray(cart) && cart.length > 0) { 
-            const totalItems = cart.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0);
-            setCartCount(totalItems);
-          } else {
-            setCartCount(0);
-          }
-        } else {
-          setCartCount(0); 
+          const totalItems = cart.reduce((acc: any, item: any) => acc + (Number(item.quantity) || 1), 0);
+          setCartCount(totalItems);
         }
       } catch (e) {
-        console.error("Error synchronizing navbar state:", e);
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-        setCartCount(0);
+        console.error("Navbar sync error:", e);
       }
     };
 
     checkData();
-
     window.addEventListener("storage", checkData);
-    window.addEventListener("cartUpdated", checkData); 
-
-    return () => {
-      window.removeEventListener("storage", checkData);
-      window.removeEventListener("cartUpdated", checkData);
-    };
+    return () => window.removeEventListener("storage", checkData);
   }, [pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("medistore_user");
-    localStorage.removeItem("medistore_cart"); // 🎯 পরিবর্তন ৩: লগআউট করলে কার্টও একদম ০ হয়ে যাবে
-    
-    setIsLoggedIn(false);
-    setIsAdmin(false);
-    setIsMenuOpen(false);
-    setCartCount(0);
-    
-    router.push("/");
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-  };
-
-  const handleDashboard = () => {
-    try {
-      const userStr = localStorage.getItem("medistore_user");
-      if (!userStr) return;
-      
-      const user = JSON.parse(userStr);
-      const role = (user?.role || "").toUpperCase();
-      setIsMenuOpen(false);
-
-      if (role === "ADMIN") router.push("/admin/dashboard");
-      else if (role === "SELLER") router.push("/seller/dashboard");
-      else router.push("/customer/dashboard");
-    } catch (e) {
-      console.error(e);
-    }
+    localStorage.clear();
+    window.location.href = "/";
   };
 
   const navLinks = [
@@ -108,122 +57,70 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 w-full bg-[#02040a]/90 backdrop-blur-md border-b border-white/10 z-[100]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between h-16">
+    <nav className="sticky top-0 w-full bg-white border-b border-[#E6F4ED] z-[100] shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
         
         {/* LOGO */}
-        <Link href="/" className="flex items-center gap-2 text-xl font-black italic text-white z-[110]">
-          <Pill className="text-emerald-500" size={26} /> MEDI<span className="text-emerald-500">STORE</span>
+        <Link href="/" className="flex items-center gap-2 text-xl font-black text-[#008249]">
+          <Pill className="text-[#008249]" size={28} /> MEDISTORE
         </Link>
 
         {/* DESKTOP MENU */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <Link key={link.name} href={link.href} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300 hover:text-emerald-500 tracking-widest transition-all">
+            <Link key={link.name} href={link.href} className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-600 hover:text-[#008249] transition-all">
               {link.icon} {link.name}
             </Link>
           ))}
-          
-        
           {isLoggedIn && (
-            <button onClick={handleDashboard} className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300 hover:text-emerald-500 tracking-widest transition-all">
+            <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-600 hover:text-[#008249]">
               <LayoutDashboard size={16} /> Dashboard
             </button>
           )}
         </div>
 
-        {/* DESKTOP & MOBILE RIGHT SECTION */}
-        <div className="flex items-center gap-4 md:gap-6">
-          
-          {/* Cart Icon */}
-          <Link href="/customer/cart" className="relative text-emerald-500 bg-emerald-500/10 p-2.5 rounded-2xl hover:bg-emerald-500 hover:text-black transition-all z-[110] border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+        {/* RIGHT SECTION */}
+        <div className="flex items-center gap-4">
+          <Link href="/customer/cart" className="relative p-2.5 rounded-xl bg-[#E6F4ED] text-[#008249] hover:bg-[#008249] hover:text-white transition-all">
             <ShoppingCart size={20} />
-            {/* 🛒 কার্ট কাউন্ট ০ এর বেশি হলে আসল সংখ্যা দেখাবে, না হলে ০ দেখাবে */}
-            <span className="absolute -top-1 -right-1 bg-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full text-emerald-600 shadow-lg">
+            <span className="absolute -top-1 -right-1 bg-[#008249] text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
               {cartCount}
             </span>
           </Link>
 
-          {/* Desktop Auth */}
           <div className="hidden md:block">
             {isLoggedIn ? (
-              <button 
-                onClick={handleLogout} 
-                className="flex items-center gap-2 px-5 py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95"
-              >
-                <LogOut size={14} /> Logout
+              <button onClick={handleLogout} className="px-5 py-2 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">
+                Logout
               </button>
             ) : (
-              <Link 
-                href="/login" 
-                className="px-5 py-2 bg-emerald-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
-              >
+              <Link href="/login" className="px-5 py-2 bg-[#008249] text-white rounded-lg text-[10px] font-black uppercase hover:bg-[#006633] transition-all">
                 Login
               </Link>
             )}
           </div>
 
-          {/* Hamburger Menu Button */}
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-white p-2 z-[110] hover:text-emerald-500 transition-colors"
-          >
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-[#008249]">
             {isMenuOpen ? <X size={26} /> : <Menu size={26} />}
           </button>
         </div>
       </div>
 
-      {/* MOBILE MENU OVERLAY */}
+      {/* MOBILE MENU */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "100vh" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="fixed top-0 left-0 w-full bg-[#05070f] z-[105] flex flex-col pt-24 px-6 overflow-hidden md:hidden"
-          >
-            <div className="flex flex-col gap-6">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-b border-[#E6F4ED] overflow-hidden">
+            <div className="p-6 flex flex-col gap-4">
               {navLinks.map((link) => (
-                <Link 
-                  key={link.name} 
-                  href={link.href} 
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-4 text-xl font-black italic uppercase text-white hover:text-emerald-500"
-                >
-                  <span className="p-3 bg-white/5 rounded-2xl text-emerald-500">{link.icon}</span>
-                  {link.name}
+                <Link key={link.name} href={link.href} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 text-slate-600 font-bold uppercase text-sm">
+                  {link.icon} {link.name}
                 </Link>
               ))}
-              
-              {/* 🛡️ মোবাইল সিকিউরড ড্যাশবোর্ড লিঙ্ক */}
-              {isLoggedIn && (
-                <button 
-                  onClick={handleDashboard}
-                  className="flex items-center gap-4 text-xl font-black italic uppercase text-white hover:text-emerald-500 text-left"
-                >
-                  <span className="p-3 bg-white/5 rounded-2xl text-emerald-500"><LayoutDashboard size={18} /></span>
-                  Dashboard
-                </button>
-              )}
-
-              <hr className="border-white/5 my-4" />
-
-              {/* Mobile Auth Button */}
+              <hr />
               {isLoggedIn ? (
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center gap-4 w-full p-4 bg-red-500/10 rounded-3xl text-xl font-black italic uppercase text-red-500 border border-red-500/20 shadow-lg active:scale-95 transition-all"
-                >
-                  <LogOut size={20} /> Logout
-                </button>
+                <button onClick={handleLogout} className="text-red-600 font-bold text-sm">Logout</button>
               ) : (
-                <Link 
-                  href="/login" 
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-4 w-full p-4 bg-emerald-500 rounded-3xl text-xl font-black italic uppercase text-black shadow-lg active:scale-95 transition-all"
-                >
-                  <User size={20} /> Login
-                </Link>
+                <Link href="/login" className="text-[#008249] font-bold text-sm">Login</Link>
               )}
             </div>
           </motion.div>
