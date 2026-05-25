@@ -8,6 +8,7 @@ import { ShoppingCart, Menu, X, Pill, LayoutDashboard, Home, Store, Layers3, Log
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -24,10 +25,13 @@ export default function Navbar() {
         if (token && userStr) {
           const user = JSON.parse(userStr);
           setIsLoggedIn(true);
-          setIsAdmin(user.role?.toUpperCase() === "ADMIN");
+          const role = user.role?.toUpperCase() || "";
+          setUserRole(role);
+          setIsAdmin(role === "ADMIN");
         } else {
           setIsLoggedIn(false);
           setIsAdmin(false);
+          setUserRole("");
         }
 
         if (cartStr) {
@@ -48,6 +52,13 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.clear();
     window.location.href = "/";
+  };
+
+  // 🎯 ইউজারের রোল অনুযায়ী ডাইনামিক ড্যাশবোর্ড ইউআরএল জেনারেটর
+  const getDashboardPath = () => {
+    if (userRole === "ADMIN") return "/admin/dashboard";
+    if (userRole === "SELLER") return "/seller/dashboard";
+    return "/customer/dashboard";
   };
 
   const navLinks = [
@@ -73,7 +84,11 @@ export default function Navbar() {
             </Link>
           ))}
           {isLoggedIn && (
-            <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-600 hover:text-[#008249]">
+            /* 🎯 এখানে ডাইনামিক ড্যাশবোর্ড পাথ ও ডার্ক গ্রিন হোভার কালার সেট করা হয়েছে */
+            <button 
+              onClick={() => router.push(getDashboardPath())} 
+              className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-600 hover:text-[#008249] transition-colors"
+            >
               <LayoutDashboard size={16} /> Dashboard
             </button>
           )}
@@ -112,15 +127,30 @@ export default function Navbar() {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white border-b border-[#E6F4ED] overflow-hidden">
             <div className="p-6 flex flex-col gap-4">
               {navLinks.map((link) => (
-                <Link key={link.name} href={link.href} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 text-slate-600 font-bold uppercase text-sm">
+                <Link key={link.name} href={link.href} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 text-slate-600 font-bold uppercase text-sm hover:text-[#008249]">
                   {link.icon} {link.name}
                 </Link>
               ))}
+              
+              {/* 🎯 মোবাইল ভিউতেও ড্যাশবোর্ড বাটন অ্যাড করা হলো সঠিক পাথে যাওয়ার জন্য */}
+              {isLoggedIn && (
+                <button 
+                  onClick={() => { router.push(getDashboardPath()); setIsMenuOpen(false); }} 
+                  className="flex items-center gap-4 text-[#008249] font-bold uppercase text-sm"
+                >
+                  <LayoutDashboard size={18} /> Dashboard
+                </button>
+              )}
+              
               <hr />
               {isLoggedIn ? (
-                <button onClick={handleLogout} className="text-red-600 font-bold text-sm">Logout</button>
+                <button onClick={handleLogout} className="text-red-600 font-bold text-sm text-left flex items-center gap-2">
+                  <LogOut size={18} /> Logout
+                </button>
               ) : (
-                <Link href="/login" className="text-[#008249] font-bold text-sm">Login</Link>
+                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[#008249] font-bold text-sm flex items-center gap-2">
+                  <User size={18} /> Login
+                </Link>
               )}
             </div>
           </motion.div>
