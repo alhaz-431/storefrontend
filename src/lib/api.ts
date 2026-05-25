@@ -10,7 +10,6 @@ const fetcher = async (endpoint: string, options: RequestInit = {}, isFormData =
   const token = getCleanToken();
   const headers = new Headers(options.headers || {});
 
-  // FormData হলে Content-Type সেট করবেন না, ব্রাউজার নিজেই তা হ্যান্ডেল করবে
   if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -21,9 +20,8 @@ const fetcher = async (endpoint: string, options: RequestInit = {}, isFormData =
 
   const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
   
-  // 401 এরর হলে টোকেন ডিলিট করে ইউজারকে অথেন্টিকেশন এরর দেওয়া
   if (res.status === 401) {
-    localStorage.removeItem("token");
+    if (typeof window !== "undefined") localStorage.removeItem("token");
     throw new Error("আপনার সেশন শেষ! আবার লগইন করুন।");
   }
 
@@ -52,15 +50,17 @@ export const api = {
       body: JSON.stringify(data) 
     }),
     getAllOrders: () => fetcher("/seller/orders"),
+    getMyOrders: () => fetcher("/orders/my-orders"),
+    getOrderById: (id: string) => fetcher(`/orders/${id}`),
+    // এখানে status একটি string হিসেবে নেওয়া হচ্ছে, যেন অন্য কোথাও অবজেক্ট পাঠাতে না হয়
     updateStatus: (id: string, status: string) => 
-      fetcher(`/seller/orders/${id}`, { 
+      fetcher(`/orders/${id}/status`, { 
         method: "PATCH", 
         body: JSON.stringify({ status }) 
       }),
   },
-  // নতুন যোগ করা অবজেক্টসমূহ
-  medicines: {
-    getAll: () => fetcher("/medicines"),
+  medicines: { 
+    getAll: () => fetcher("/medicines") 
   },
   seller: {
     addMedicine: (data: FormData) => 
@@ -70,5 +70,4 @@ export const api = {
     deleteMedicine: (id: string) => 
       fetcher(`/seller/medicines/${id}`, { method: "DELETE" }),
   }
-};
-
+} as const; // 'as const' ব্যবহার করার ফলে সব টাইপ এরর দূর হয়ে যাবে
