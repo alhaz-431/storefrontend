@@ -1,6 +1,5 @@
 "use client";
 
-// 🎯 বেস ইউআরএল (অ্যাসাইনমেন্টের নিয়ম অনুযায়ী /v1 ছাড়া ক্লিন রাখা হয়েছে)
 const BASE_URL = "https://storemedistore.onrender.com/api";
 
 const getCleanToken = () => {
@@ -13,16 +12,19 @@ const getCleanToken = () => {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        token = user.token || user.accessToken || null;
+        token = user.token || null;
       } catch (e) {
-        console.error("Error parsing medistore_user:", e);
+        console.error("Error parsing user:", e);
       }
     }
   }
   
-  if (!token) return null;
+  if (!token) {
+    console.warn("⚠️ No token found in localStorage");
+    return null;
+  }
   
-  // ডাবল বা সিঙ্গেল কোটেশন এবং এক্সট্রা স্পেস ক্লিনিং লজিক
+  // Clean token
   let cleanToken = String(token).trim();
   if (cleanToken.startsWith('"') && cleanToken.endsWith('"')) {
     cleanToken = cleanToken.slice(1, -1);
@@ -31,6 +33,7 @@ const getCleanToken = () => {
     cleanToken = cleanToken.slice(1, -1);
   }
   
+  console.log("✅ Token found:", cleanToken.substring(0, 20) + "...");
   return cleanToken;
 };
 
@@ -39,53 +42,76 @@ const fetcher = async (
   options: RequestInit = {},
   isFormData = false
 ) => {
+  // রিকোয়েস্ট এক্সিকিউট হওয়ার মুহূর্তে একদম কারেন্ট/তাজা টোকেন তুলে আনবে
   const token = getCleanToken();
   const headers = new Headers(options.headers || {});
   
-  // যদি FormData না হয়, শুধু তখনই Content-Type JSON সেট হবে
   if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   
+  // ✅ Token add করো
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+    console.log("🔐 Authorization header set");
+  } else {
+    console.warn("⚠️ No token to send");
   }
 
   const formattedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const fullUrl = `${BASE_URL}${formattedEndpoint}`;
 
-  console.log(`📡 API Call: ${options.method || "GET"} ${fullUrl}`);
+  console.log(`📡 ${options.method || "GET"} ${fullUrl}`);
+  console.log("🔑 Headers:", {
+    "Content-Type": headers.get("Content-Type"),
+    "Authorization": headers.get("Authorization") ? "Bearer [TOKEN]" : "None"
+  });
 
   const res = await fetch(fullUrl, { ...options, headers });
   
-  // টোকেন এক্সপায়ারড বা ইনভ্যালিড হলে অটো-লগআউট ও ক্লিনআপ
+  // 401 handle করো
   if (res.status === 401) { 
+    console.error("❌ 401 Unauthorized");
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
-      localStorage.removeItem("medistore_user"); 
+      localStorage.removeItem("medistore_user");
+      // কুকি ক্লিয়ার করে দেওয়া ভালো যাতে ওল্ড সেশন ঝুলে না থাকে
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+      window.location.href = "/login";
     } 
     throw new Error("Unauthorized: Please login again"); 
   }
   
   if (!res.ok) { 
     const err = await res.json().catch(() => ({})); 
-    throw new Error(err.error || err.message || `API Error: ${res.status}`); 
+    console.error("❌ API Error:", err);
+    throw new Error(err.error || err.message || `Error ${res.status}`); 
   }
   
   return res.json();
 };
 
 export const api = {
-  // ✅ Authentication
   auth: { 
     login: async (data: any) => { 
       const res = await fetcher("/auth/login", { 
         method: "POST", 
         body: JSON.stringify(data) 
       }); 
-      if (res.token) {
-        localStorage.setItem("token", res.token); 
+      
+      const token = res.token || res.accessToken || res.data?.token;
+      const user = res.user || res.data?.user;
+
+      // ✅ এপিআই লেয়ারেই টোকেন ও ইউজার সেভ নিশ্চিত করা হলো
+      if (typeof window !== "undefined" && token) {
+        localStorage.setItem("token", token);
+        document.cookie = `token=${token}; path=/; SameSite=Lax`;
+        if (user) {
+          localStorage.setItem("medistore_user", JSON.stringify(user));
+        }
       }
+
+      console.log("✅ Login successful, token secured.");
       return res; 
     },
     register: (data: any) => fetcher("/auth/register", { 
@@ -99,47 +125,38 @@ export const api = {
     }),
   },
 
-  // ✅ Medicines (Public + Seller/Admin Management)
   medicines: { 
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
-    
-    // 📸 সেলার বা অ্যাডমিন ইমেজসহ আপলোড করবে তাই FormData এবং ৩ নম্বর প্যারামিটার true দেওয়া হয়েছে
-    create: (data: FormData) => fetcher("/medicines/add", { 
+    create: (data: any) => fetcher("/medicines/add", { 
       method: "POST", 
-      body: data 
-    }, true),
-    
-    update: (id: string, data: FormData) => fetcher(`/medicines/${id}`, { 
+      body: JSON.stringify(data) 
+    }),
+    update: (id: string, data: any) => fetcher(`/medicines/${id}`, { 
       method: "PATCH", 
-      body: data 
-    }, true),
-    
+      body: JSON.stringify(data) 
+    }),
     delete: (id: string) => fetcher(`/medicines/${id}`, { 
       method: "DELETE" 
     }),
   },
 
-  // ✅ Categories
   categories: {
     getAll: () => fetcher("/medicines/categories"),
   },
 
-  // ✅ Orders (Customer Specific)
   orders: {
     create: (data: any) => fetcher("/orders", { 
       method: "POST", 
       body: JSON.stringify(data) 
     }),
-    getAll: () => fetcher("/orders"), // সব অর্ডার দেখার জন্য (যদি প্রয়োজন হয়)
-    getMyOrders: () => fetcher("/orders/my-orders"), // 👈 কাস্টমারের নিজস্ব অর্ডার দেখার জন্য সেফ রুট
+    getAll: () => fetcher("/orders"),
     getById: (id: string) => fetcher(`/orders/${id}`),
     cancel: (id: string) => fetcher(`/orders/${id}/cancel`, { 
       method: "PATCH" 
     }),
   },
 
-  // ✅ Seller Panel
   seller: {
     getOrders: () => fetcher("/seller/orders"),
     updateOrderStatus: (id: string, status: string) => fetcher(`/seller/orders/${id}/status`, { 
@@ -148,7 +165,6 @@ export const api = {
     }),
   },
 
-  // ✅ Admin Panel
   admin: {
     getAllUsers: () => fetcher("/admin/users"),
     updateUserStatus: (id: string, isActive: boolean) => fetcher(`/admin/users/${id}`, { 
