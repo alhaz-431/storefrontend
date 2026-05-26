@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Phone, User, ArrowRight, CreditCard, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { api } from "@/lib/api"; // 👑 ভুল env বা ইউআরএল এড়াতে আপনার গ্লোবাল api.ts ইমপোর্ট করা হলো
+import { api } from "@/lib/api"; 
 
 interface CartItem {
   id: string;         
@@ -26,7 +26,6 @@ export default function CheckoutPage() {
   const [shippingPhone, setShippingPhone] = useState("");
 
   useEffect(() => {
-    // 🛒 কাস্টমার কার্ট থেকে ডেটা লোড করা হচ্ছে
     const savedCart = localStorage.getItem("medistore_cart");
     if (savedCart) {
       try {
@@ -36,7 +35,6 @@ export default function CheckoutPage() {
       }
     }
     
-    // 👤 লগইন থাকা ইউজারের ডেটা থেকে নাম ও ফোন অটো-ফিল করা
     const userStr = localStorage.getItem("medistore_user");
     if (userStr) {
       try {
@@ -49,14 +47,12 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  // 💰 Safe Total Calculation
   const totalAmount = cart.reduce((acc, item) => {
     const price = Number(item.price || 0);
     const qty = Number(item.quantity || 0);
     return acc + (isNaN(price * qty) ? 0 : price * qty);
   }, 0);
 
-  // 🚀 অর্ডার সাবমিট করার মেইন হ্যান্ডলার ফাংশন
   const handlePlaceOrder = async () => {
     if (!shippingAddress.trim() || !shippingName.trim() || !shippingPhone.trim()) {
       toast.error("নাম, ফোন এবং ঠিকানা সবগুলোই দিতে হবে!");
@@ -72,7 +68,6 @@ export default function CheckoutPage() {
     const toastId = toast.loading("অর্ডার প্রসেস হচ্ছে...");
 
     try {
-      // 🛡️ ব্যাকএন্ডের রিকোয়ারমেন্ট অনুযায়ী নিখুঁত অবজেক্ট ম্যাপিং
       const orderData = {
         items: cart.map((item) => {
           const actualMedicineId = item.medicineId || item.id;
@@ -90,25 +85,17 @@ export default function CheckoutPage() {
 
       console.log("Sending clean payload to backend:", orderData);
 
-      // ✅ হার্ডকোডেড /api/v1/orders এর বদলে সরাসরি আপনার api.ts এর মেথডে ডেটা পাঠানো হলো
       const resData = await api.orders.create(orderData);
       console.log("Backend Response Actual Data:", resData);
 
-      // 💡 সাকসেস রেসপন্স আসলে ক্লিয়ারেন্স ও রিডাইরেকশন শুরু হবে
       if (resData) {
-        // ১. কার্ট লোকাল স্টোরেজ থেকে সাকসেসফুলি ক্লিয়ার করা
         localStorage.removeItem("medistore_cart");
-        
-        // ২. গ্লোবাল ন্যাভবারের কার্ট কাউন্ট রিসেট করার জন্য কাস্টম ইভেন্ট ফায়ার
         window.dispatchEvent(new Event("cartUpdated"));
-        
-        // ৩. সাকসেস টোস্ট নোটিফিকেশন
         toast.success("Checkout Successful! 🎉", { id: toastId });
 
-        // 🎯 ৪. আপনার রিকোয়ারমেন্ট অনুযায়ী ঠিক ১০০ms ডিলের পর অটোমেটিক /customer/orders পেজে চলে যাবে
         setTimeout(() => {
           router.push("/customer/orders");
-          window.scrollTo({ top: 0, behavior: "smooth" }); // নতুন পেজে গিয়ে স্মুথলি ওপরে স্ক্রোল হবে
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }, 100);
         
       } else {
@@ -124,23 +111,24 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-12 font-sans">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative z-10">
+    /* 🎯 গ্লোবাল ডার্ক ডেটল গ্রিন ব্যাকগ্রাউন্ড মিক্স */
+    <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#006643,_#020d0a)] text-slate-200 py-8 sm:py-12 md:py-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative z-10">
         
         {/* 📦 বাম পাশ: Delivery Details Form */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tight">
-              CHECK<span className="text-emerald-600">OUT</span>
+            <h1 className="text-3xl md:text-5xl font-black text-slate-100 uppercase tracking-tight">
+              CHECK<span className="text-[#006643]">OUT</span>
             </h1>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
-               <ShieldCheck size={14} className="text-emerald-600" /> Finalize Your Secure Order
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+               <ShieldCheck size={14} className="text-[#006643]" /> Finalize Your Secure Order
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 p-6 md:p-10 rounded-[32px] shadow-sm space-y-8">
-            <div className="flex items-center gap-3 text-slate-900">
-              <MapPin size={22} className="text-emerald-600 animate-pulse" />
+          <div className="bg-white/[0.02] border border-white/5 p-6 md:p-10 rounded-[32px] shadow-lg backdrop-blur-md space-y-8">
+            <div className="flex items-center gap-3 text-slate-100">
+              <MapPin size={22} className="text-[#006643] animate-pulse" />
               <h2 className="font-black uppercase text-lg tracking-tight">Delivery Details</h2>
             </div>
 
@@ -148,14 +136,14 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {/* রিসিভার নেম ইনপুট */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Receiver Name</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Receiver Name</label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
                     <input 
                       type="text"
                       value={shippingName}
                       onChange={(e) => setShippingName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-inner"
+                      className="w-full bg-[#020d0a]/60 border border-white/5 rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold text-slate-200 outline-none focus:border-[#006643] transition-all shadow-inner"
                       placeholder="Enter name..."
                     />
                   </div>
@@ -163,14 +151,14 @@ export default function CheckoutPage() {
                 
                 {/* ফোন নাম্বার ইনপুট */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Phone Number</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Phone Number</label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
                     <input 
                       type="text"
                       value={shippingPhone}
                       onChange={(e) => setShippingPhone(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-inner"
+                      className="w-full bg-[#020d0a]/60 border border-white/5 rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold text-slate-200 outline-none focus:border-[#006643] transition-all shadow-inner"
                       placeholder="Phone number..."
                     />
                   </div>
@@ -179,52 +167,52 @@ export default function CheckoutPage() {
 
               {/* ফুল অ্যাড্রেস টেক্সট-এরিয়া */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Full Delivery Address</label>
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Full Delivery Address</label>
                 <textarea 
                   value={shippingAddress}
                   onChange={(e) => setShippingAddress(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white transition-all min-h-[120px] shadow-inner"
+                  className="w-full bg-[#020d0a]/60 border border-white/5 rounded-2xl py-4 px-5 text-sm font-bold text-slate-200 outline-none focus:border-[#006643] transition-all min-h-[120px] shadow-inner"
                   placeholder="Street name, House, Area, City..."
                 />
               </div>
 
               {/* পেমেন্ট মেথড ইনফো */}
-              <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl flex items-center justify-between">
+              <div className="bg-[#006643]/10 border border-[#006643]/20 p-5 rounded-2xl flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
+                  <div className="w-10 h-10 bg-[#006643] rounded-xl flex items-center justify-center text-white shadow-md">
                     <CreditCard size={18} />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-wider text-emerald-700">Payment Method</p>
-                    <p className="text-xs font-bold text-slate-800 uppercase">Cash on Delivery</p>
+                    <p className="text-[9px] font-black uppercase tracking-wider text-[#006643]">Payment Method</p>
+                    <p className="text-xs font-bold text-slate-300 uppercase">Cash on Delivery</p>
                   </div>
                 </div>
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-[#006643] rounded-full animate-pulse" />
               </div>
             </div>
           </div>
         </motion.div>
 
         {/* 💰 ডান পাশ: Order Summary Panel */}
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-          <div className="bg-white border border-slate-200 rounded-[32px] p-6 md:p-10 shadow-sm sticky top-6">
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
-               Order <span className="text-emerald-600">Summary</span>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="lg:mt-16">
+          <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 md:p-10 shadow-lg backdrop-blur-md sticky top-24">
+            <h2 className="text-2xl font-black text-slate-200 uppercase tracking-tight mb-8 pb-4 border-b border-white/5">
+               Order <span className="text-[#006643]">Summary</span>
             </h2>
 
             <div className="space-y-5 mb-8">
                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subtotal Amount</span>
-                  <span className="text-lg font-bold text-slate-800">৳{totalAmount}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Subtotal Amount</span>
+                  <span className="text-lg font-bold text-slate-200">৳{totalAmount}</span>
                </div>
                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Shipping Fee</span>
-                  <span className="text-sm font-black text-emerald-600 uppercase bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">Free</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Shipping Fee</span>
+                  <span className="text-xs font-black text-[#006643] uppercase bg-[#006643]/10 px-2.5 py-1 rounded-md border border-[#006643]/20">Free</span>
                </div>
-               <div className="h-[1px] w-full bg-slate-100" />
+               <div className="h-[1px] w-full bg-white/5" />
                <div className="flex justify-between items-end pt-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1">Grand Total</span>
-                  <span className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">৳{totalAmount}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#006643] mb-1">Grand Total</span>
+                  <span className="text-4xl md:text-5xl font-black text-slate-100 tracking-tight">৳{totalAmount}</span>
                </div>
             </div>
 
@@ -232,10 +220,10 @@ export default function CheckoutPage() {
             <button
               onClick={handlePlaceOrder}
               disabled={loading}
-              className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 shadow-lg ${
+              className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 shadow-lg group active:scale-95 ${
                 loading 
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
-                  : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100 active:scale-95"
+                  ? "bg-white/[0.02] text-slate-600 border border-white/5 cursor-not-allowed shadow-none" 
+                  : "bg-[#006643] text-white hover:bg-[#004d32] shadow-[#006643]/10"
               }`}
             >
               {loading ? (
@@ -243,11 +231,11 @@ export default function CheckoutPage() {
                   <Loader2 className="animate-spin" size={16} /> PROCESSING...
                 </>
               ) : (
-                <>CONFIRM ORDER <ArrowRight size={16} /></>
+                <>CONFIRM ORDER <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" /></>
               )}
             </button>
             
-            <p className="text-center mt-6 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+            <p className="text-center mt-6 text-[9px] font-bold uppercase tracking-wider text-slate-600">
                By placing this order you agree to our terms of service
             </p>
           </div>
