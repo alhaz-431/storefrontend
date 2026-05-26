@@ -16,7 +16,8 @@ export default function SellerOrders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const data = await api.orders.getAllOrders();
+      // ✅ সঠিক এপিআই মেথড 'getAll()' ব্যবহার করা হয়েছে
+      const data = await api.orders.getAll();
       setOrders(Array.isArray(data) ? data : []);
     } catch (error: any) {
       toast.error(error.message || "অর্ডার লিস্ট লোড করা যায়নি");
@@ -32,7 +33,8 @@ export default function SellerOrders() {
   const updateStatus = async (orderId: string, status: string) => {
     const toastId = toast.loading("আপডেট হচ্ছে...");
     try {
-      await api.orders.updateStatus(orderId, status); 
+      // ✅ সঠিক এপিআই মেথড 'api.seller.updateOrderStatus' ব্যবহার করা হয়েছে
+      await api.seller.updateOrderStatus(orderId, status); 
       toast.success(`অর্ডার এখন ${status}`, { id: toastId });
       setOrders((prevOrders) => 
         prevOrders.map((order: any) => 
@@ -43,6 +45,14 @@ export default function SellerOrders() {
       toast.error("আপডেট ব্যর্থ হয়েছে", { id: toastId });
     }
   };
+
+  // সার্চ ফিল্টারিং লজিক (কাস্টমারের নাম বা আইডি দিয়ে)
+  const filteredOrders = orders.filter((order) => {
+    const customerName = order.customer?.name?.toLowerCase() || "";
+    const orderId = order.id?.toLowerCase() || "";
+    const search = searchTerm.toLowerCase();
+    return customerName.includes(search) || orderId.includes(search);
+  });
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 p-4 md:p-10 font-sans">
@@ -56,7 +66,7 @@ export default function SellerOrders() {
           <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-[#E6F4ED] shadow-sm">
             <div className="text-right">
               <p className="text-[10px] font-bold text-slate-400 uppercase">Active Orders</p>
-              <p className="text-2xl font-black text-[#008249]">{orders.length}</p>
+              <p className="text-2xl font-black text-[#008249]">{filteredOrders.length}</p>
             </div>
             <div className="bg-[#E6F4ED] p-2 rounded-xl text-[#008249]">
               <Package size={24} />
@@ -78,29 +88,35 @@ export default function SellerOrders() {
         <div className="space-y-6">
           {loading ? (
             <div className="flex justify-center py-32"><RefreshCcw className="animate-spin text-[#008249]" size={40} /></div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="text-center py-20 text-slate-400 font-medium bg-white border border-slate-100 rounded-[2rem]">
+              কোনো অর্ডার পাওয়া যায়নি।
+            </div>
           ) : (
-            <AnimatePresence>
-              {orders.map((order: any) => (
-                <motion.div key={order.id} className="bg-white border border-slate-100 p-8 rounded-[2rem] shadow-sm">
-                  <div className="flex justify-between items-center mb-6 border-b pb-4">
-                    <span className="text-[10px] font-black uppercase text-slate-400">ID: #{order.id?.slice(-8)}</span>
-                    <span className="px-4 py-1 bg-[#E6F4ED] text-[#008249] rounded-full text-[10px] font-black">{order.status}</span>
-                  </div>
-                  <div className="grid lg:grid-cols-3 gap-8 items-center">
-                    <div>
-                      <h3 className="font-bold text-lg">{order.customer?.name || "Customer"}</h3>
-                      <p className="text-xs text-slate-400">{order.customer?.email}</p>
+            <div className="space-y-6">
+              <AnimatePresence>
+                {filteredOrders.map((order: any) => (
+                  <motion.div key={order.id} className="bg-white border border-slate-100 p-8 rounded-[2rem] shadow-sm">
+                    <div className="flex justify-between items-center mb-6 border-b pb-4">
+                      <span className="text-[10px] font-black uppercase text-slate-400">ID: #{order.id?.slice(-8).toUpperCase()}</span>
+                      <span className="px-4 py-1 bg-[#E6F4ED] text-[#008249] rounded-full text-[10px] font-black">{order.status}</span>
                     </div>
-                    <div className="font-black text-xl text-slate-900">৳{order.totalAmount}</div>
-                    <div className="flex gap-2 flex-wrap">
-                      <StatusBtn onClick={() => updateStatus(order.id, "PENDING")} icon={<Clock size={14}/>} label="Pending" active={order.status === "PENDING"} />
-                      <StatusBtn onClick={() => updateStatus(order.id, "SHIPPED")} icon={<Truck size={14}/>} label="Shipped" active={order.status === "SHIPPED"} />
-                      <StatusBtn onClick={() => updateStatus(order.id, "DELIVERED")} icon={<CheckCircle2 size={14}/>} label="Done" active={order.status === "DELIVERED"} />
+                    <div className="grid lg:grid-cols-3 gap-8 items-center">
+                      <div>
+                        <h3 className="font-bold text-lg">{order.customer?.name || "Customer"}</h3>
+                        <p className="text-xs text-slate-400">{order.customer?.email}</p>
+                      </div>
+                      <div className="font-black text-xl text-slate-900">৳{order.totalAmount}</div>
+                      <div className="flex gap-2 flex-wrap">
+                        <StatusBtn onClick={() => updateStatus(order.id, "PENDING")} icon={<Clock size={14}/>} label="Pending" active={order.status === "PENDING"} />
+                        <StatusBtn onClick={() => updateStatus(order.id, "SHIPPED")} icon={<Truck size={14}/>} label="Shipped" active={order.status === "SHIPPED"} />
+                        <StatusBtn onClick={() => updateStatus(order.id, "DELIVERED")} icon={<CheckCircle2 size={14}/>} label="Done" active={order.status === "DELIVERED"} />
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           )}
         </div>
       </div>
@@ -111,6 +127,7 @@ export default function SellerOrders() {
 function StatusBtn({ onClick, icon, label, active }: any) {
   return (
     <button 
+      type="button"
       onClick={onClick} 
       className={`flex items-center gap-2 py-2 px-3 rounded-lg border text-[10px] font-bold uppercase transition-all ${
         active 

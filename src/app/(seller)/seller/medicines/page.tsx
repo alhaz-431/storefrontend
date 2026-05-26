@@ -61,7 +61,6 @@ export default function SellerMedicines() {
     setFormData(defaultFormData);
   };
 
-  // এডিটিং এর সময় ফর্মের ফিল্ডগুলো পপুলেট করার ফাংশন
   const handleEditClick = (med: Medicine) => {
     setEditingMedicine(med);
     setFormData({
@@ -71,7 +70,7 @@ export default function SellerMedicines() {
       manufacturer: med.manufacturer || "",
       categoryId: med.category?.id || "084c61a7-730d-427c-8011-0675cdfd8434",
       description: med.description || "",
-      imageFile: null, // ফাইল ইনপুট নতুন করে আপলোডের জন্য খালি থাকবে
+      imageFile: null,
     });
     setIsModalOpen(true);
   };
@@ -80,7 +79,7 @@ export default function SellerMedicines() {
     if (!confirm("Are you sure you want to delete this product?")) return;
     const toastId = toast.loading("Deleting...");
     try {
-      await api.seller.deleteMedicine(id);
+      await api.medicines.delete(id);
       toast.success("Deleted successfully!", { id: toastId });
       fetchMedicines();
     } catch (err: any) {
@@ -95,7 +94,6 @@ export default function SellerMedicines() {
     
     try {
       const data = new FormData();
-      // টাইপসেফ উপায়ে FormData অ্যাপেন্ড করা
       Object.entries(formData).forEach(([key, value]) => {
         if (key !== "imageFile" && value !== null && value !== undefined) {
           data.append(key, String(value));
@@ -107,10 +105,10 @@ export default function SellerMedicines() {
       }
 
       if (editingMedicine) {
-        await api.seller.updateMedicine(editingMedicine.id, data);
+        await api.medicines.update(editingMedicine.id, data);
         toast.success("Updated successfully!", { id: toastId });
       } else {
-        await api.seller.addMedicine(data);
+        await api.medicines.create(data);
         toast.success("Added successfully!", { id: toastId });
       }
       closeModal();

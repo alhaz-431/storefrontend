@@ -30,11 +30,14 @@ export default function OrderDetails() {
   useEffect(() => {
     if (!id) return;
     fetchOrderDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchOrderDetails = async () => {
     try {
-      const res = await api.orders.getOrderById(id);
+      setLoading(true);
+      // ✅ সঠিক এপিআই মেথড 'getById' ব্যবহার করা হয়েছে
+      const res = await api.orders.getById(id);
       const data = res.data || res;
       setOrder({
         ...data,
@@ -55,7 +58,8 @@ export default function OrderDetails() {
     if (!confirm("আপনি কি নিশ্চিত যে অর্ডারটি বাতিল করতে চান?")) return;
     setCancelling(true);
     try {
-      await api.orders.updateStatus(id, "CANCELLED");
+      // ✅ সঠিক এবং ডেডিকেটেড মেথড 'cancel' ব্যবহার করা হয়েছে
+      await api.orders.cancel(id);
       toast.success("Order Cancelled Successfully");
       await fetchOrderDetails();
     } catch (error) {
@@ -117,7 +121,7 @@ export default function OrderDetails() {
           </div>
         </div>
 
-        {/* 🎯 Tracker Section - ফুললি রেসপন্সিভ মোবাইল ফ্রেন্ডলি গ্রিড/ফ্লেক্স লেআউট */}
+        {/* Tracker Section */}
         {!isCancelled && (
           <div className="bg-white/[0.02] border border-white/5 p-6 sm:p-8 rounded-[24px] backdrop-blur-md mb-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative">
@@ -151,7 +155,7 @@ export default function OrderDetails() {
             {/* Items Card */}
             <div className="space-y-4">
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Products Ordered</h3>
-              {order.items.map((item: OrderItem) => (
+              {order.items?.map((item: OrderItem) => (
                 <div key={item.id} className="flex justify-between items-center p-4 sm:p-5 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-[#006643]/20 transition-colors backdrop-blur-sm">
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="w-12 h-12 bg-[#006643]/10 border border-[#006643]/20 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
@@ -167,7 +171,7 @@ export default function OrderDetails() {
               ))}
             </div>
 
-            {/* 🎯 নিউ সেকশন: Shipping/Delivery Information Card */}
+            {/* Shipping/Delivery Information Card */}
             <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 space-y-6 backdrop-blur-md">
               <h3 className="font-black uppercase text-sm tracking-tight text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                 <MapPin size={16} className="text-[#006643]" /> Delivery Information
