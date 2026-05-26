@@ -31,7 +31,7 @@ export default function CustomerOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await api.orders.getMyOrders();
+     const response = await api.orders.getAll();
       const fetchedOrders = response?.data || response || [];
       
       if (Array.isArray(fetchedOrders)) {
