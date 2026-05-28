@@ -1,70 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { api } from "@/lib/api";
-import { ShoppingBag, Loader2, Calendar, AlertCircle } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { Package, Clock, CheckCircle2, XCircle, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
-interface OrderItem {
-  id: string;
-  medicineId: string;
-  quantity: number;
-  price: number;
-  medicine?: {
-    name: string;
-  };
-}
-
-interface Order {
-  id: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-  items?: OrderItem[];
-}
-
 export default function CustomerOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-     const response = await api.orders.getAll();
-      const fetchedOrders = response?.data || response || [];
+      // ✅ 'getMyOrders()' এর বদলে সঠিক এপিআই মেথড 'getAll()' ব্যবহার করা হয়েছে
+      const response = await api.orders.getAll();
       
+      // রেসপন্স ডাটা অ্যারে কিনা তা চেক করে সেট করা
+      const fetchedOrders = response?.data || response || [];
       if (Array.isArray(fetchedOrders)) {
         setOrders(fetchedOrders);
       } else {
         setOrders([]);
       }
     } catch (error: any) {
-      // 🎯 ব্যাকএন্ড অর্ডার না পেয়ে মেসেজ দিলে টার্মিনাল নোংরা না করে ডিরেক্ট খালি স্টেট সেট করবে
-      if (error?.message?.includes("পাওয়া যায়নি") || error?.message?.includes("failed")) {
-        setOrders([]);
-        setLoading(false);
-        return;
-      }
-      
-      // অন্য কোনো জেনুইন নেটওয়ার্ক এরর হলে ব্যাকআপ ট্রাই করবে
-      try {
-        const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
-        const res = await fetch("https://storemedistore.onrender.com/api/orders/my-orders", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setOrders(data?.data || data || []);
-        } else {
-          setOrders([]);
-        }
-      } catch (innerErr) {
-        setOrders([]);
-      }
+      toast.error(error.message || "অর্ডার হিস্ট্রি লোড করা যায়নি");
     } finally {
       setLoading(false);
     }
@@ -74,104 +34,108 @@ export default function CustomerOrders() {
     fetchOrders();
   }, []);
 
-  const getStatusColor = (status: string) => {
+  const handleCancelOrder = async (orderId: string) => {
+    if (!window.confirm("আপনি কি নিশ্চিত যে এই অর্ডারটি বাতিল করতে চান?")) return;
+    
+    const toastId = toast.loading("অর্ডার বাতিল করা হচ্ছে...");
+    try {
+      await api.orders.cancel(orderId);
+      toast.success("অর্ডারটি সফলভাবে বাতিল হয়েছে", { id: toastId });
+      // লোকাল স্টেট আপডেট করে স্ট্যাটাস CANCELLED করে দেওয়া
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, status: "CANCELLED" } : order
+        )
+      );
+    } catch (error: any) {
+      toast.error(error.message || "অর্ডার বাতিল করা যায়নি", { id: toastId });
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
     switch (status?.toUpperCase()) {
-      case "DELIVERED":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case "PLACED":
       case "PENDING":
-        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+        return <Clock className="text-amber-500" size={18} />;
+      case "PROCESSING":
+        return <RefreshCcw className="text-blue-500 animate-spin" size={18} />;
+      case "SHIPPED":
+        return <Package className="text-indigo-500" size={18} />;
+      case "DELIVERED":
+        return <CheckCircle2 className="text-emerald-500" size={18} />;
+      case "CANCELLED":
+        return <XCircle className="text-rose-500" size={18} />;
       default:
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+        return <Clock className="text-slate-500" size={18} />;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-[#006643] mb-4" size={36} />
-        <p className="text-[10px] font-black uppercase tracking-widest text-[#006643]/60 animate-pulse">
-          Loading Your Orders...
-        </p>
+      <div className="min-h-screen flex items-center justify-center bg-[#040610]">
+        <RefreshCcw className="animate-spin text-blue-500" size={40} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#006643,_#020d0a)] p-4 md:p-8 max-w-full font-sans text-slate-200">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter leading-none text-slate-100">
-              My <span className="text-[#006643]">Orders</span>
-            </h1>
-            <p className="text-[10px] font-bold text-emerald-500/40 uppercase tracking-[0.3em] mt-2">
-              Track and manage your purchase history
-            </p>
-          </div>
-          
-          <Link 
-            href="/shop" 
-            className="bg-[#006643] hover:bg-[#004d32] text-white px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#006643]/20 flex items-center gap-2"
-          >
-            <ShoppingBag size={14} /> Start Shopping
-          </Link>
-        </div>
+    <div className="min-h-screen bg-[#040610] text-slate-100 p-4 md:p-10 font-sans">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-2xl font-black uppercase tracking-tight text-white">
+            My <span className="text-blue-500">Orders History</span>
+          </h1>
+          <p className="text-slate-400 text-xs mt-1">আপনার করা সকল অর্ডারের তালিকা ও বর্তমান অবস্থা</p>
+        </header>
 
         {orders.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white/[0.02] border border-white/5 rounded-3xl p-12 text-center max-w-md mx-auto mt-12 backdrop-blur-md"
-          >
-            <AlertCircle className="mx-auto text-slate-500 mb-4" size={44} />
-            <h3 className="text-lg font-bold text-slate-300 uppercase tracking-tight">No Orders Found</h3>
-            <p className="text-xs text-slate-500 mt-2 mb-6">You haven't placed any medicine orders yet.</p>
-            <Link 
-              href="/shop" 
-              className="inline-block bg-[#006643] hover:bg-[#004d32] text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all"
-            >
-              Browse Medicines
+          <div className="text-center py-20 bg-[#0d111c] border border-white/10 rounded-2xl">
+            <Package className="mx-auto text-slate-600 mb-4" size={48} />
+            <p className="text-slate-400 font-medium">আপনি এখনও কোনো অর্ডার করেননি।</p>
+            <Link href="/shop" className="mt-4 inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-6 py-3 rounded-xl transition">
+              মেডিসিন কিনুন
             </Link>
-          </motion.div>
+          </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order, idx) => (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 rounded-2xl p-5 md:p-6 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 backdrop-blur-sm"
-              >
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-400">
-                      Order #{order.id.slice(-8).toUpperCase()}
-                    </span>
-                    <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-md border ${getStatusColor(order.status)}`}>
-                      {order.status}
-                    </span>
+            {orders.map((order: any) => (
+              <div key={order.id} className="bg-[#0d111c] border border-white/10 p-6 rounded-2xl shadow-sm hover:border-white/20 transition">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-4 mb-4">
+                  <div>
+                    <span className="text-[10px] font-mono text-slate-500 uppercase block">ORDER ID</span>
+                    <span className="text-sm font-bold text-white">#{order.id?.slice(-8).toUpperCase()}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                    {getStatusIcon(order.status)}
+                    <span className="text-xs font-black uppercase tracking-wider">{order.status}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <p className="text-xs text-slate-400">Total Amount</p>
+                    <p className="text-xl font-black text-blue-400">৳{order.totalAmount}</p>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Calendar size={14} />
-                    <span>{new Date(order.createdAt).toLocaleDateString("bn-BD")}</span>
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    {/* রিকোয়ারমেন্ট ডায়াগ্রাম অনুযায়ী কাস্টমার শুধু PLACED বা PENDING অবস্থায় অর্ডার ক্যানসেল করতে পারবে */}
+                    {(order.status === "PLACED" || order.status === "PENDING") && (
+                      <button
+                        onClick={() => handleCancelOrder(order.id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-rose-600/10 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white rounded-xl text-xs font-bold transition"
+                      >
+                        Cancel Order
+                      </button>
+                    )}
+                    <Link
+                      href={`/customer/orders/${order.id}`}
+                      className="w-full sm:w-auto text-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition"
+                    >
+                      View Details
+                    </Link>
                   </div>
-
-                  {order.items && order.items.length > 0 && (
-                    <p className="text-xs text-[#006643] font-bold mt-1">
-                      {order.items.map(item => item.medicine?.name || `Medicine (x${item.quantity})`).join(", ")}
-                    </p>
-                  )}
                 </div>
-
-                <div className="flex md:flex-col justify-between items-end w-full md:w-auto pt-4 md:pt-0 border-t border-white/5 md:border-none">
-                  <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest md:mb-1">Total Payable</span>
-                  <span className="text-xl font-black italic text-slate-100">
-                    ৳{order.totalAmount.toLocaleString()}
-                  </span>
-                </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
