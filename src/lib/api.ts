@@ -42,18 +42,34 @@ const fetcher = async (
   options: RequestInit = {},
   isFormData = false
 ) => {
-  // রিকোয়েস্ট এক্সিকিউট হওয়ার মুহূর্তে একদম কারেন্ট/তাজা টোকেন তুলে আনবে
   const token = getCleanToken();
-  const headers = new Headers(options.headers || {});
   
-  if (!isFormData && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
+  // 🎯 Headers অবজেক্টের বদলে প্লেইন অবজেক্ট ব্যবহার করা হলো যা প্রোডাকশনে হেডার ড্রপ হওয়া আটকাবে
+  const headers: Record<string, string> = {};
+
+  // আগের কোনো হেডার থাকলে তা প্লেইন অবজেক্টে রূপান্তর করা
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, value]) => {
+        headers[key] = value;
+      });
+    } else {
+      Object.assign(headers, options.headers);
+    }
   }
   
-  // ✅ Token add করো
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // ✅ Token হেডার ইনজেক্ট করা
   if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-    console.log("🔐 Authorization header set");
+    headers["Authorization"] = `Bearer ${token}`;
+    console.log("🔐 Authorization header set successfully");
   } else {
     console.warn("⚠️ No token to send");
   }
@@ -62,11 +78,8 @@ const fetcher = async (
   const fullUrl = `${BASE_URL}${formattedEndpoint}`;
 
   console.log(`📡 ${options.method || "GET"} ${fullUrl}`);
-  console.log("🔑 Headers:", {
-    "Content-Type": headers.get("Content-Type"),
-    "Authorization": headers.get("Authorization") ? "Bearer [TOKEN]" : "None"
-  });
 
+  // 🛰️ fetch কল করার সময় প্লেইন হেডার অবজেক্ট পাস করা হলো
   const res = await fetch(fullUrl, { ...options, headers });
   
   // 401 handle করো
@@ -75,7 +88,6 @@ const fetcher = async (
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("medistore_user");
-      // কুকি ক্লিয়ার করে দেওয়া ভালো যাতে ওল্ড সেশন ঝুলে না থাকে
       document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
       window.location.href = "/login";
     } 
@@ -102,7 +114,6 @@ export const api = {
       const token = res.token || res.accessToken || res.data?.token;
       const user = res.user || res.data?.user;
 
-      // ✅ এপিআই লেয়ারেই টোকেন ও ইউজার সেভ নিশ্চিত করা হলো
       if (typeof window !== "undefined" && token) {
         localStorage.setItem("token", token);
         document.cookie = `token=${token}; path=/; SameSite=Lax`;

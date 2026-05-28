@@ -54,6 +54,14 @@ export default function CheckoutPage() {
   }, 0);
 
   const handlePlaceOrder = async () => {
+    // 1️⃣ সিকিউরিটি চেক: একদম বাটন ক্লিকের মুহূর্তে টোকেন আছে কিনা দেখে নেওয়া
+    const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!currentToken) {
+      toast.error("আপনার লগইন সেশন পাওয়া যায়নি! দয়া করে আবার লগইন করুন।");
+      router.push("/login");
+      return;
+    }
+
     if (!shippingAddress.trim() || !shippingName.trim() || !shippingPhone.trim()) {
       toast.error("নাম, ফোন এবং ঠিকানা সবগুলোই দিতে হবে!");
       return;
@@ -85,18 +93,24 @@ export default function CheckoutPage() {
 
       console.log("Sending clean payload to backend:", orderData);
 
+      // এপিআই কল
       const resData = await api.orders.create(orderData);
       console.log("Backend Response Actual Data:", resData);
 
       if (resData) {
         localStorage.removeItem("medistore_cart");
+        // কার্ট আপডেট করার গ্লোবাল ইভেন্ট ফায়ার
         window.dispatchEvent(new Event("cartUpdated"));
         toast.success("Checkout Successful! 🎉", { id: toastId });
 
+        // রাউটিং ইমপ্রুভমেন্ট: টোস্ট মেসেজ দেখার জন্য সামান্য ১০ মিলি সেকেন্ড বাফারিং ও পুশ
         setTimeout(() => {
+          router.refresh(); // ক্যাশ ক্লিয়ার করতে রাউট রিফ্রেশ
           router.push("/customer/orders");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }, 100);
+          if (typeof window !== "undefined") {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        }, 10);
         
       } else {
         throw new Error("অর্ডার প্রসেস করা সম্ভব হয়নি");
