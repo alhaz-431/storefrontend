@@ -36,15 +36,19 @@ const getCleanToken = () => {
   return cleanToken;
 };
 
+// টাইপস্ক্রিপ্টের বডি এবং অপশনস এরর ফিক্স করার জন্য কাস্টম ইন্টারফেস
+interface CustomRequestInit extends Omit<RequestInit, "body"> {
+  body?: any; 
+}
+
 const fetcher = async (
   endpoint: string,
-  options: RequestInit = {},
-  isFormData = false // 🎯 এই ফ্ল্যাগটি ঠিকমতো হ্যান্ডেল করা হলো
+  options: CustomRequestInit = {},
+  isFormData = false
 ) => {
   const token = getCleanToken();
   const headers: Record<string, string> = {};
 
-  // আগের কোনো হেডার থাকলে তা প্লেইন অবজেক্টে রূপান্তর করা
   if (options.headers) {
     if (options.headers instanceof Headers) {
       options.headers.forEach((value, key) => {
@@ -59,12 +63,11 @@ const fetcher = async (
     }
   }
   
-  // 🔥 FormData হলে Content-Type হেডার দেওয়া যাবে না, ব্রাউজার নিজে বাউন্ডারি সেট করবে
+  // FormData না হলে এবং Content-Type না থাকলে অটোমেটিক JSON হেডার বসবে
   if (!isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
   
-  // ✅ Token হেডার ইনজেক্ট করা
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -74,9 +77,18 @@ const fetcher = async (
 
   console.log(`📡 ${options.method || "GET"} ${fullUrl}`);
 
-  const res = await fetch(fullUrl, { ...options, headers });
+  // স্মার্ট বডি হ্যান্ডলিং: FormData না হলে অবজেক্টকে অটোমেটিক stringify করে নেবে
+  let finalBody = options.body;
+  if (!isFormData && options.body && typeof options.body !== "string") {
+    finalBody = JSON.stringify(options.body);
+  }
+
+  const res = await fetch(fullUrl, { 
+    ...(options as RequestInit), 
+    headers, 
+    body: finalBody 
+  });
   
-  // 401 handle করো
   if (res.status === 401) { 
     console.error("❌ 401 Unauthorized");
     if (typeof window !== "undefined") {
@@ -102,7 +114,7 @@ export const api = {
     login: async (data: any) => { 
       const res = await fetcher("/auth/login", { 
         method: "POST", 
-        body: JSON.stringify(data) 
+        body: data 
       }); 
       
       const token = res.token || res.accessToken || res.data?.token;
@@ -121,12 +133,12 @@ export const api = {
     },
     register: (data: any) => fetcher("/auth/register", { 
       method: "POST", 
-      body: JSON.stringify(data) 
+      body: data 
     }),
-    getMe: () => fetcher("/auth/profile"), // 🎯 FIX: /auth/me থেকে /auth/profile করা হলো
-    updateProfile: (data: any) => fetcher("/auth/profile", { 
+    getMe: () => fetcher("/auth/me"), 
+    updateProfile: (data: any) => fetcher("/auth/me", { 
       method: "PATCH", 
-      body: JSON.stringify(data) 
+      body: data 
     }),
   },
 
@@ -134,16 +146,52 @@ export const api = {
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
     
-    // 🎯 FIX: পাথ /medicines করা হলো এবং FormData হ্যান্ডেল করার জন্য body থেকে JSON.stringify বাদ দিয়ে শেষে true পাঠানো হলো
-    create: (data: any) => fetcher("/medicines", { 
-      method: "POST", 
-      body: data 
-    }, true), 
+    // ক্রিয়েট করার সময় ক্যাটাগরি আইডি অবজেক্টে থাকলে সেটাকে FormData-তে রূপান্তর নিশ্চিত করা
+    create: (data: any) => {
+      let bodyData = data;
+      if (!(data instanceof FormData)) {
+        const formData = new FormData();
+        Object.keys(data).forEach((key) => {
+          if (key === "category" && !data.categoryId) {
+            formData.append("categoryId", data[key]);
+          } else {
+            formData.append(key, data[key]);
+          }
+        });
+        bodyData = formData;
+      } else {
+        if (data.has("category") && !data.has("categoryId")) {
+          data.append("categoryId", data.get("category") as string);
+        }
+      }
+      
+      return fetcher("/medicines", { 
+        method: "POST", 
+        body: bodyData 
+      }, true);
+    }, 
     
-    update: (id: string, data: any) => fetcher(`/medicines/${id}`, { 
-      method: "PATCH", 
-      body: data // 🎯 এখানেও যদি ইমেজ এডিট করার অপশন থাকে, তাই সরাসরি data পাস করা হলো
-    }, data instanceof FormData), 
+    // এডিট/আপডেট করার সময় অবজেক্ট নাকি FormData সেটার ওপর ভিত্তি করে ডায়নামিক হ্যান্ডলিং
+    update: (id: string, data: any) => {
+      let isForm = data instanceof FormData;
+      let bodyData = data;
+
+      if (isForm) {
+        if (data.has("category") && !data.has("categoryId")) {
+          data.append("categoryId", data.get("category") as string);
+        }
+      } else {
+        if (data.category && !data.categoryId) {
+          data.categoryId = data.category;
+          delete data.category;
+        }
+      }
+      
+      return fetcher(`/medicines/${id}`, { 
+        method: "PATCH", 
+        body: bodyData 
+      }, isForm);
+    }, 
     
     delete: (id: string) => fetcher(`/medicines/${id}`, { 
       method: "DELETE" 
@@ -151,13 +199,13 @@ export const api = {
   },
 
   categories: {
-    getAll: () => fetcher("/medicines/categories"),
+    getAll: () => fetcher("/categories"),
   },
 
   orders: {
     create: (data: any) => fetcher("/orders", { 
       method: "POST", 
-      body: JSON.stringify(data) 
+      body: data 
     }),
     getAll: () => fetcher("/orders"),
     getById: (id: string) => fetcher(`/orders/${id}`),
@@ -167,10 +215,10 @@ export const api = {
   },
 
   seller: {
-    getOrders: () => fetcher("/seller/orders"),
-    updateOrderStatus: (id: string, status: string) => fetcher(`/seller/orders/${id}/status`, { 
+    getOrders: () => fetcher("/orders"), 
+    updateOrderStatus: (id: string, status: string) => fetcher(`/orders/${id}/status`, { 
       method: "PATCH", 
-      body: JSON.stringify({ status }) 
+      body: { status } 
     }),
   },
 
@@ -178,7 +226,7 @@ export const api = {
     getAllUsers: () => fetcher("/admin/users"),
     updateUserStatus: (id: string, isActive: boolean) => fetcher(`/admin/users/${id}`, { 
       method: "PATCH", 
-      body: JSON.stringify({ isActive }) 
+      body: { isActive } 
     }),
     getAllOrders: () => fetcher("/admin/orders"),
     getStatistics: () => fetcher("/admin/statistics"),
