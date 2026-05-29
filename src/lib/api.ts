@@ -33,18 +33,15 @@ const getCleanToken = () => {
     cleanToken = cleanToken.slice(1, -1);
   }
   
-  console.log("✅ Token found:", cleanToken.substring(0, 20) + "...");
   return cleanToken;
 };
 
 const fetcher = async (
   endpoint: string,
   options: RequestInit = {},
-  isFormData = false
+  isFormData = false // 🎯 এই ফ্ল্যাগটি ঠিকমতো হ্যান্ডেল করা হলো
 ) => {
   const token = getCleanToken();
-  
-  // 🎯 Headers অবজেক্টের বদলে প্লেইন অবজেক্ট ব্যবহার করা হলো যা প্রোডাকশনে হেডার ড্রপ হওয়া আটকাবে
   const headers: Record<string, string> = {};
 
   // আগের কোনো হেডার থাকলে তা প্লেইন অবজেক্টে রূপান্তর করা
@@ -62,6 +59,7 @@ const fetcher = async (
     }
   }
   
+  // 🔥 FormData হলে Content-Type হেডার দেওয়া যাবে না, ব্রাউজার নিজে বাউন্ডারি সেট করবে
   if (!isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
@@ -69,9 +67,6 @@ const fetcher = async (
   // ✅ Token হেডার ইনজেক্ট করা
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
-    console.log("🔐 Authorization header set successfully");
-  } else {
-    console.warn("⚠️ No token to send");
   }
 
   const formattedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
@@ -79,7 +74,6 @@ const fetcher = async (
 
   console.log(`📡 ${options.method || "GET"} ${fullUrl}`);
 
-  // 🛰️ fetch কল করার সময় প্লেইন হেডার অবজেক্ট পাস করা হলো
   const res = await fetch(fullUrl, { ...options, headers });
   
   // 401 handle করো
@@ -129,7 +123,7 @@ export const api = {
       method: "POST", 
       body: JSON.stringify(data) 
     }),
-    getMe: () => fetcher("/auth/me"),
+    getMe: () => fetcher("/auth/profile"), // 🎯 FIX: /auth/me থেকে /auth/profile করা হলো
     updateProfile: (data: any) => fetcher("/auth/profile", { 
       method: "PATCH", 
       body: JSON.stringify(data) 
@@ -139,14 +133,18 @@ export const api = {
   medicines: { 
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
-    create: (data: any) => fetcher("/medicines/add", { 
+    
+    // 🎯 FIX: পাথ /medicines করা হলো এবং FormData হ্যান্ডেল করার জন্য body থেকে JSON.stringify বাদ দিয়ে শেষে true পাঠানো হলো
+    create: (data: any) => fetcher("/medicines", { 
       method: "POST", 
-      body: JSON.stringify(data) 
-    }),
+      body: data 
+    }, true), 
+    
     update: (id: string, data: any) => fetcher(`/medicines/${id}`, { 
       method: "PATCH", 
-      body: JSON.stringify(data) 
-    }),
+      body: data // 🎯 এখানেও যদি ইমেজ এডিট করার অপশন থাকে, তাই সরাসরি data পাস করা হলো
+    }, data instanceof FormData), 
+    
     delete: (id: string) => fetcher(`/medicines/${id}`, { 
       method: "DELETE" 
     }),

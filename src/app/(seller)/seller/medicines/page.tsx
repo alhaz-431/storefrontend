@@ -30,7 +30,7 @@ export default function SellerMedicines() {
     price: "",
     stock: "",
     manufacturer: "",
-    categoryId: "084c61a7-730d-427c-8011-0675cdfd8434",
+    categoryId: "084c61a7-730d-427c-8011-0675cdfd8434", // ডিফল্ট ক্যাটাগরি আইডি
     description: "",
     imageFile: null as File | null,
   };
@@ -94,12 +94,19 @@ export default function SellerMedicines() {
     
     try {
       const data = new FormData();
+      
+      // 🎯 সেফ ডাটা ট্রান্সফার লজিক
       Object.entries(formData).forEach(([key, value]) => {
-        if (key !== "imageFile" && value !== null && value !== undefined) {
+        if (key !== "imageFile" && value !== null && value !== undefined && value !== "") {
+          // যদি ক্যাটাগরি ড্রপডাউন ফর্মে না থাকে, তাহলে ভুল আইডি ডাটাবেজে পাঠানো স্কিপ করবে
+          if (key === "categoryId" && value === "084c61a7-730d-427c-8011-0675cdfd8434") {
+             return; 
+          }
           data.append(key, String(value));
         }
       });
       
+      // 🖼️ ইমেজ ফাইল থাকলে তা Append করা হবে
       if (formData.imageFile) {
         data.append("image", formData.imageFile);
       }
@@ -114,6 +121,7 @@ export default function SellerMedicines() {
       closeModal();
       fetchMedicines();
     } catch (err: any) {
+      console.error("Submission Error Details:", err);
       toast.error(err.message || "Operation failed", { id: toastId });
     } finally {
       setLoading(false);

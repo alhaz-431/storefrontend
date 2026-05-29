@@ -51,7 +51,7 @@ export default function SellerProfile() {
       }
     } catch (error: any) {
       console.error("Profile load error:", error);
-      toast.error("সেশন শেষ হয়ে গেছে, আবার লগইন করুন।");
+      toast.error("প্রোফাইল ডাটা লোড করা যায়নি।");
     } finally {
       setLoading(false);
     }
@@ -75,10 +75,13 @@ export default function SellerProfile() {
     setUpdating(true);
     const toastId = toast.loading("তথ্য আপডেট হচ্ছে...");
     try {
-      if ("updateProfile" in api.auth) {
+      // ✅ FIX: Render URL ফেলে দিয়ে সরাসরি আমাদের সেন্ট্রাল api আর্কিটেকচার ব্যবহার করা হলো
+      if (api.auth && typeof (api.auth as any).updateProfile === "function") {
         await (api.auth as any).updateProfile(tempData);
       } else {
-        await fetch("https://storemedistore.onrender.com/api/auth/profile", {
+        // Fallback: যদি api.ts এ মেথড না পান তবে সেফলি ডাইনামিক ইউআরএল জেনারেট করবে
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://storemedistore.onrender.com/api";
+        const res = await fetch(`${baseUrl}/auth/profile`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -86,8 +89,10 @@ export default function SellerProfile() {
           },
           body: JSON.stringify(tempData)
         });
+        if (!res.ok) throw new Error("Failed to update via fallback fetch");
       }
 
+      // LocalStorage এর ইউজার ডাটা সিঙ্ক করা
       const currentUserStr = localStorage.getItem("medistore_user");
       if (currentUserStr) {
         const currentUser = JSON.parse(currentUserStr);
