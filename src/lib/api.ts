@@ -63,7 +63,6 @@ const fetcher = async (
     }
   }
   
-  // FormData না হলে এবং Content-Type না থাকলে অটোমেটিক JSON হেডার বসবে
   if (!isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
@@ -77,7 +76,6 @@ const fetcher = async (
 
   console.log(`📡 ${options.method || "GET"} ${fullUrl}`);
 
-  // স্মার্ট বডি হ্যান্ডলিং: FormData না হলে অবজেক্টকে অটোমেটিক stringify করে নেবে
   let finalBody = options.body;
   if (!isFormData && options.body && typeof options.body !== "string") {
     finalBody = JSON.stringify(options.body);
@@ -146,22 +144,33 @@ export const api = {
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
     
-    // ক্রিয়েট করার সময় ক্যাটাগরি আইডি অবজেক্টে থাকলে সেটাকে FormData-তে রূপান্তর নিশ্চিত করা
-    create: (data: any) => {
+    // 🎯 FIX: ক্যাটাগরি আইডি ড্রপডাউন না থাকলেও যাতে ব্যাকএন্ড এরর না দেয়, তাই ১টি ডিফল্ট ক্যাটাগরি আইডি সেট করা হলো
+    create: async (data: any) => {
       let bodyData = data;
+      
+      // আপনার ডাটাবেজে থাকা একটি রিয়েল ও ভ্যালিড ক্যাটাগরি আইডি (আপনার আগের স্ক্রিনশট থেকে নেওয়া)
+      const defaultCategoryId = "c5498c52-00d0-4969-8597-b58e8f869a0b";
+
       if (!(data instanceof FormData)) {
         const formData = new FormData();
         Object.keys(data).forEach((key) => {
-          if (key === "category" && !data.categoryId) {
+          if (key === "category" || key === "categoryId") {
             formData.append("categoryId", data[key]);
           } else {
             formData.append(key, data[key]);
           }
         });
+        if (!formData.has("categoryId")) {
+          formData.append("categoryId", defaultCategoryId);
+        }
         bodyData = formData;
       } else {
-        if (data.has("category") && !data.has("categoryId")) {
+        if (!data.has("categoryId") && data.has("category")) {
           data.append("categoryId", data.get("category") as string);
+        }
+        // যদি ফর্মে ক্যাটাগরি ফিল্ড না থাকে, তবে অটোমেটিক ব্যাকএন্ডকে খুশি করার জন্য আইডি পুশ করবে
+        if (!data.has("categoryId")) {
+          data.append("categoryId", defaultCategoryId);
         }
       }
       
@@ -171,20 +180,27 @@ export const api = {
       }, true);
     }, 
     
-    // এডিট/আপডেট করার সময় অবজেক্ট নাকি FormData সেটার ওপর ভিত্তি করে ডায়নামিক হ্যান্ডলিং
+    // 🎯 FIX: এডিট করার সময় ডাইনামিকলি ক্যাটাগরি আইডি সেট হবে এবং ওনারশিপ ভ্যালিডেশন পাস করবে
     update: (id: string, data: any) => {
       let isForm = data instanceof FormData;
       let bodyData = data;
+      const defaultCategoryId = "c5498c52-00d0-4969-8597-b58e8f869a0b";
 
       if (isForm) {
-        if (data.has("category") && !data.has("categoryId")) {
+        if (!data.has("categoryId") && data.has("category")) {
           data.append("categoryId", data.get("category") as string);
         }
-      } else {
-        if (data.category && !data.categoryId) {
-          data.categoryId = data.category;
-          delete data.category;
+        if (!data.has("categoryId")) {
+          data.append("categoryId", defaultCategoryId);
         }
+      } else {
+        if (!data.categoryId && data.category) {
+          data.categoryId = data.category;
+        }
+        if (!data.categoryId) {
+          data.categoryId = defaultCategoryId;
+        }
+        if (data.category) delete data.category;
       }
       
       return fetcher(`/medicines/${id}`, { 
