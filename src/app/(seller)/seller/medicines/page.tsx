@@ -25,14 +25,13 @@ export default function SellerMedicines() {
   const [fetching, setFetching] = useState(true);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
 
-  // আপনার ব্যাকএন্ডের রিকোয়ার্ড ডিফল্ট ক্যাটাগরি আইডি
   const DEFAULT_CATEGORY_ID = "084c61a7-730d-427c-8011-0675cdfd8434";
 
   const defaultFormData = {
     name: "",
     price: "",
     stock: "",
-    manufacturer: "Beximco Pharma", // ডিফল্ট হিসেবে বা খালি রাখতে পারেন
+    manufacturer: "",
     categoryId: DEFAULT_CATEGORY_ID,
     description: "",
     imageFile: null as File | null,
@@ -71,9 +70,9 @@ export default function SellerMedicines() {
       price: String(med.price),
       stock: String(med.stock),
       manufacturer: med.manufacturer || "",
-      categoryId: med.category?.id || typeof med.category === "string" ? med.category : DEFAULT_CATEGORY_ID,
+      categoryId: med.category?.id || DEFAULT_CATEGORY_ID,
       description: med.description || "",
-      imageFile: null,
+      imageFile: null, // এডিটের শুরুতে ইমেজ ফাইল আমরা ফাঁকা রাখবো যেন পুরনো .avif জ্যাম না পাকায়
     });
     setIsModalOpen(true);
   };
@@ -98,23 +97,25 @@ export default function SellerMedicines() {
     try {
       const data = new FormData();
       
-      // 🎯 ফিক্সড ডাটা ট্রান্সফার লজিক (Object.entries ঠিক করা হয়েছে)
+      // 🎯 ১. টেক্সট ডাটাগুলো FormData-তে পুশ করা
       Object.entries(formData).forEach(([key, value]) => {
         if (key !== "imageFile" && value !== null && value !== undefined && value !== "") {
           data.append(key, String(value));
         }
       });
       
-      // যদি ক্যাটাগরি আইডি অবজেক্টে না থাকে, তবে সেফটি হিসেবে ডিফল্টটা পুশ করবে
+      // সেফটি চেক: যদি ক্যাটাগরি আইডি কোন কারণে মিস হয়
       if (!formData.categoryId) {
         data.append("categoryId", DEFAULT_CATEGORY_ID);
       }
-      
-      // 🖼️ ইমেজ ফাইল থাকলে তা Append করা হবে
-      if (formData.imageFile) {
+
+      // 🎯 ২. ইমেজের নিখুঁত লজিক
+      // ইউজার নতুন কোনো ফাইল সিলেক্ট করলেই কেবল তা পাঠানো হবে, নতুবা ব্যাকএন্ডে পুরনো ফাইলই থাকবে
+      if (formData.imageFile instanceof File) {
         data.append("image", formData.imageFile);
       }
 
+      // 🚀 ৩. ব্যাকএন্ডে রিকোয়েস্ট পাঠানো
       if (editingMedicine) {
         await api.medicines.update(editingMedicine.id, data);
         toast.success("Updated successfully!", { id: toastId });
@@ -126,7 +127,8 @@ export default function SellerMedicines() {
       fetchMedicines();
     } catch (err: any) {
       console.error("Submission Error Details:", err);
-      toast.error(err.message || "Operation failed", { id: toastId });
+      const serverMessage = err.response?.data?.message || err.message || "Operation failed";
+      toast.error(serverMessage, { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -171,7 +173,7 @@ export default function SellerMedicines() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#E6F4ED] text-[#008249] uppercase text-[10px] font-black tracking-wider">
-                  <th className="px-8 py-4">Product</th>
+                  <th className="px-8 py-4">Product Image & Name</th>
                   <th className="px-8 py-4">Price</th>
                   <th className="px-8 py-4">Stock</th>
                   <th className="px-8 py-4 text-right">Actions</th>
@@ -193,11 +195,20 @@ export default function SellerMedicines() {
                 ) : (
                   filtered.map((med) => (
                     <tr key={med.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
-                      {/* টীকা: ফ্লেক্স রিমুভ করে স্ট্যান্ডার্ড সেল রাখা হয়েছে যেন টেবিল গ্রিড ঠিক থাকে */}
-                      <td className="px-8 py-4 font-bold text-slate-900">
+                      {/* 🖼️ আপনার রেন্ডার সার্ভারের লিঙ্ক সহ ইমেজ কলাম */}
+                      <td className="px-8 py-4 font-bold text-slate-900 flex items-center gap-3">
+                        <img 
+                          src={med.image ? (med.image.startsWith('http') ? med.image : `https://storemedistore.onrender.com/${med.image}`) : "https://placehold.co/50x50?text=No+Image"} 
+                          alt={med.name}
+                          className="w-10 h-10 object-cover rounded-lg bg-slate-100"
+                          onError={(e) => {
+                            // সার্ভারে ইমেজ না থাকলে (যেমন ENOENT এরর) এটি ব্যাকআপ ইমেজ হিসেবে No Image দেখাবে
+                            (e.target as HTMLImageElement).src = "https://placehold.co/50x50?text=No+Image";
+                          }}
+                        />
                         <div>
                           <p>{med.name}</p>
-                          {med.manufacturer && <p className="text-[10px] text-slate-400 uppercase tracking-wide font-normal mt-0.5">{med.manufacturer}</p>}
+                          {med.manufacturer && <p className="text-[10px] text-slate-400 uppercase font-normal mt-0.5">{med.manufacturer}</p>}
                         </div>
                       </td>
                       <td className="px-8 py-4 text-slate-600 font-medium">৳{med.price}</td>
@@ -205,13 +216,13 @@ export default function SellerMedicines() {
                       <td className="px-8 py-4 text-right space-x-3">
                         <button 
                           onClick={() => handleEditClick(med)} 
-                          className="text-blue-600 hover:text-blue-800 transition-colors p-1 inline-block"
+                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
                         >
                           <Edit3 size={18} />
                         </button>
                         <button 
                           onClick={() => handleDeleteClick(med.id)} 
-                          className="text-red-600 hover:text-red-800 transition-colors p-1 inline-block"
+                          className="text-red-600 hover:text-red-800 transition-colors p-1"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -252,7 +263,7 @@ export default function SellerMedicines() {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Medicine Name *</label>
                 <input 
                   required 
-                  className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none text-slate-800" 
+                  className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none" 
                   placeholder="e.g. Napa Extend" 
                   value={formData.name} 
                   onChange={e => setFormData({...formData, name: e.target.value})} 
@@ -266,7 +277,7 @@ export default function SellerMedicines() {
                     required 
                     type="number" 
                     step="0.01"
-                    className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none text-slate-800" 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none" 
                     placeholder="0.00" 
                     value={formData.price} 
                     onChange={e => setFormData({...formData, price: e.target.value})} 
@@ -277,7 +288,7 @@ export default function SellerMedicines() {
                   <input 
                     required 
                     type="number" 
-                    className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none text-slate-800" 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none" 
                     placeholder="0" 
                     value={formData.stock} 
                     onChange={e => setFormData({...formData, stock: e.target.value})} 
@@ -285,12 +296,11 @@ export default function SellerMedicines() {
                 </div>
               </div>
 
-              {/* Manufacturer (ঐচ্ছিক কিন্তু সুন্দর দেখাবে) */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Manufacturer</label>
                 <input 
-                  className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none text-slate-800" 
-                  placeholder="e.g. Beximco Pharma" 
+                  className="w-full p-4 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none" 
+                  placeholder="e.g. Acme Laboratories" 
                   value={formData.manufacturer} 
                   onChange={e => setFormData({...formData, manufacturer: e.target.value})} 
                 />
@@ -304,16 +314,18 @@ export default function SellerMedicines() {
                   className="w-full p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-[#E6F4ED] file:text-[#008249] hover:file:bg-[#d2ebd9] file:cursor-pointer text-slate-600" 
                   onChange={e => setFormData({...formData, imageFile: e.target.files?.[0] || null})} 
                 />
-                {formData.imageFile && (
-                  <p className="text-xs text-[#008249] font-medium mt-1">✓ Selected: {formData.imageFile.name}</p>
-                )}
+                {/* 🎯 কন্ডিশনাল মেসেজ */}
+                {formData.imageFile instanceof File ? (
+                  <p className="text-xs text-[#008249] font-medium mt-1">✓ New Selected: {formData.imageFile.name}</p>
+                ) : editingMedicine && editingMedicine.image ? (
+                  <p className="text-xs text-amber-600 font-medium mt-1">Keeping existing image</p>
+                ) : null}
               </div>
 
-              {/* Description (ঐচ্ছিক) */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Description</label>
                 <textarea 
-                  className="w-full p-3 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none text-slate-800 resize-none" 
+                  className="w-full p-3 bg-slate-50 border border-slate-200 focus:border-[#008249] rounded-xl outline-none resize-none" 
                   placeholder="Brief description..." 
                   rows={2}
                   value={formData.description} 
