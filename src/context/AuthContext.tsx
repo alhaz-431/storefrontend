@@ -7,7 +7,7 @@ type User = {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "seller" | "customer";
+  role: "ADMIN" | "SELLER" | "CUSTOMER" | "admin" | "seller" | "customer";
 } | null;
 
 type AuthContextType = {
@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  
   useEffect(() => {
     const savedUser = localStorage.getItem("medistore_user");
     if (savedUser) {
@@ -40,15 +39,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = (userData: any) => {
     setUser(userData);
     localStorage.setItem("medistore_user", JSON.stringify(userData));
-    // রোল অনুযায়ী রিডাইরেক্ট
-    if (userData.role === "admin") router.push("/admin/dashboard");
-    else if (userData.role === "seller") router.push("/seller/dashboard");
-    else router.push("/");
+    
+    // 🔥 ROLE CASE FIX: বড় হাত বা ছোট হাত যাই আসুক, সব লোয়ারকেস করে চেক হবে (100% Safe)
+    const userRole = userData?.role?.toLowerCase()?.trim();
+
+    if (userRole === "admin") {
+      router.push("/admin/dashboard");
+    } else if (userRole === "seller") {
+      router.push("/seller/dashboard");
+    } else if (userRole === "customer") {
+      router.push("/customer/dashboard"); // 🛍️ কাস্টমারকে তার ড্যাশবোর্ডে পাঠাবে
+    } else {
+      router.push("/");
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("medistore_user");
+    localStorage.removeItem("token"); // টোকেনও রিমুভ করে দেওয়া ভালো
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"; // কুকি ক্লিয়ার
     router.push("/login");
   };
 
@@ -59,12 +69,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   
   if (!context) {
-   
     return {
       user: null,
       login: () => {},
