@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { FiMail, FiLock, FiArrowRight } from "react-icons/fi";
@@ -10,7 +9,6 @@ import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,49 +31,54 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const resData = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Login failed");
+        throw new Error(resData.message || "Login failed");
       }
 
-      const token = data.token || data.accessToken || data.data?.token;
-      const user = data.user || data.data?.user;
+      // 🎯 ব্যাকএন্ড এপিআই রেসপন্স ফরম্যাট লেয়ার হ্যান্ডেলিং
+      const token = resData.token || resData.accessToken || resData.data?.token || resData.data?.accessToken;
+      
+      // যদি ইউজার ডাটা সরাসরি resData.data অথবা resData.data.user এর ভেতর থাকে
+      const user = resData.user || (resData.data?.user ? resData.data.user : resData.data);
 
       if (!token || !user) {
-        throw new Error("Invalid response from server");
+        throw new Error("Invalid response structure from server");
       }
 
-      // ✅ Token save (API use এর জন্য)
+      // ✅ Token Save
       localStorage.setItem("token", token);
 
-      // ⚠️ Cookie optional (middleware থাকলে দরকার)
+      // ✅ Cookie Save (Middleware প্রটেকশনের জন্য)
       document.cookie = `token=${token}; path=/; SameSite=Lax`;
 
-      // ✅ User save
+      // ✅ User Save
       localStorage.setItem("medistore_user", JSON.stringify(user));
 
-      // ✅ Context update
-      login(user);
+      // 👑 রোল এক্সট্রাক্ট করা (ডাটাবেস ও এপিআই অনুসারে)
+      const rawRole = user?.role || user?.data?.role;
+      const role = rawRole?.toUpperCase()?.trim();
 
       toast.success(`Welcome back, ${user?.name || "User"}!`, {
         id: toastId,
       });
 
-      // 🔥 ROLE FIX (100% safe)
-      const role = user?.role?.toUpperCase()?.trim();
+      // ✅ Context update (ইউজার স্টেট সিঙ্ক করা)
+      login(user);
 
+      // 🔥 HARD REDIRECT FIX: Next.js ইন্টারনাল রাউটার জ্যাম ও মিডলওয়্যার লক এড়াতে উইন্ডো রিলোড রিডাইরেক্ট
       setTimeout(() => {
         if (role === "ADMIN") {
-          router.replace("/admin/dashboard");
+          window.location.href = "/admin/dashboard";
         } else if (role === "SELLER") {
-          router.replace("/seller/dashboard");
+          window.location.href = "/seller/dashboard";
         } else if (role === "CUSTOMER") {
-          router.replace("/customer/dashboard");
+          window.location.href = "/customer/dashboard";
         } else {
-          router.replace("/");
+          window.location.href = "/";
         }
-      }, 800);
+      }, 400);
 
     } catch (error: any) {
       toast.error(error.message || "Something went wrong!", {
