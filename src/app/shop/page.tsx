@@ -76,33 +76,36 @@ export default function ShopPage() {
     toast.success(`${med.name} added to cart!`, { 
       id: med.id,
       position: "bottom-right",
-      style: { background: "#c5a880", color: "#021e17", fontWeight: "900", borderRadius: "15px" }
+      style: { background: "#10b981", color: "#ffffff", fontWeight: "600", borderRadius: "12px" }
     });
   };
 
   return (
-    <div className="pb-32 selection:bg-[#c5a880]/30 min-h-screen text-slate-200">
+    // 🎯 ডার্টি গ্রিন কালার বদলে সম্পূর্ণ প্রিমিয়াম মেটালিক ডার্ক ব্যাকগ্রাউন্ড সেট করা হলো
+    <div className="pb-32 bg-[#0b0f19] selection:bg-emerald-500/30 min-h-screen text-slate-200 pt-8">
       <div className="container mx-auto px-4 lg:px-0 max-w-7xl">
         
-        {/* 🏛️ HERO HEADER (APOTHECARY BANNER WITH DRAWING LINE ART BACKGROUND STYLE) */}
-        <header className="mb-16 text-center pt-8">
+        {/* 🏛️ HERO HEADER (APOTHECARY BANNER - CLEAN MODERN DARK LOOK) */}
+        <header className="mb-12 text-center">
           <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="relative overflow-hidden bg-gradient-to-b from-[#022c22]/60 to-[#011a14]/40 border border-[#c5a880]/15 rounded-[2.5rem] py-14 px-4 mb-10 shadow-[0_15px_50px_rgba(0,0,0,0.5)] backdrop-blur-md">
+            {/* ডুপ্লিকেট বারের মতো লাগা কালারগুলো রিমুভ করে আল্ট্রা-মডার্ন গ্লাসি গ্রেডিয়েন্ট আনা হয়েছে */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-[#0d1527] to-slate-950 border border-slate-800 rounded-[2.5rem] py-16 px-4 mb-10 shadow-2xl backdrop-blur-md">
               
-              {/* Background Luxury Subtle Grid Overlay */}
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(197,168,128,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(197,168,128,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+              {/* মডার্ন ফাইন গ্রিড ওভারলে */}
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-emerald-500/10 blur-[100px] pointer-events-none" />
               
-              <h2 className="text-5xl md:text-8xl font-black uppercase tracking-[0.05em] text-white mb-6 font-serif relative z-10 shadow-sm">
+              <h2 className="text-4xl md:text-7xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 mb-6 font-serif relative z-10">
                 APOTHECARY
               </h2>
               
-              {/* Luxury Search Bar Wrapped inside Banner */}
-              <div className="max-w-2xl mx-auto relative group z-10 px-4 md:px-0">
-                <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-[#c5a880]/60 group-focus-within:text-[#c5a880] transition-colors" size={18} />
+              {/* মডার্ন গ্লাসি সার্চ বার */}
+              <div className="max-w-xl mx-auto relative group z-10 px-4 md:px-0">
+                <Search className="absolute left-6 md:left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" size={16} />
                 <input
                   type="text"
                   placeholder="Search curated medicines..."
-                  className="w-full bg-[#01140f]/90 border border-[#c5a880]/20 p-5 pl-16 rounded-full outline-none focus:border-[#c5a880] focus:ring-1 focus:ring-[#c5a880]/30 text-white placeholder-slate-500 transition-all shadow-inner text-sm"
+                  className="w-full bg-slate-950/80 border border-slate-800 p-4 pl-14 rounded-full outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/10 text-white placeholder-slate-600 transition-all text-sm shadow-inner"
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
@@ -112,13 +115,13 @@ export default function ShopPage() {
 
         {/* 📦 MEDICINE GRID SECTION */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="h-[430px] bg-[#022c22]/20 border border-[#c5a880]/5 animate-pulse rounded-[2.5rem]" />
+              <div key={i} className="h-[400px] bg-slate-900/40 border border-slate-800/50 animate-pulse rounded-[2rem]" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <AnimatePresence>
               {filteredMeds.length > 0 ? (
                 filteredMeds.map((med) => (
@@ -129,75 +132,75 @@ export default function ShopPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.4 }}
-                    className="group bg-[#02231b]/40 backdrop-blur-xl border border-[#c5a880]/10 rounded-[2.5rem] hover:border-[#c5a880]/40 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-all duration-500 relative flex flex-col overflow-hidden shadow-xl"
+                    className="group bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-[2rem] hover:border-emerald-500/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all duration-300 relative flex flex-col overflow-hidden shadow-lg"
                   >
-                    {/* Live Stock Badge Counter */}
-                    <div className="absolute top-5 right-5 z-20">
-                      <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border backdrop-blur-md ${med.stock > 0 ? 'bg-[#022c22]/80 text-emerald-400 border-emerald-500/20' : 'bg-red-950/80 text-red-400 border-red-500/20'}`}>
+                    {/* মডার্ন স্টক ব্যাজ */}
+                    <div className="absolute top-4 right-4 z-20">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border backdrop-blur-md ${med.stock > 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
                         {med.stock > 0 ? 'In Stock' : 'Out Of Stock'}
                       </span>
                     </div>
 
-                    {/* 🖼️ BRANDED MEDICINE IMAGE LAYER */}
-                    <div className="relative h-60 w-full bg-[#01140f]/60 overflow-hidden border-b border-[#c5a880]/10 flex items-center justify-center p-4">
+                    {/* 🖼️ MEDICINE IMAGE LAYER */}
+                    <div className="relative h-56 w-full bg-slate-950/60 overflow-hidden border-b border-slate-800/60 flex items-center justify-center p-6">
                       {med.image ? (
                         <img
                           src={med.image.startsWith('http') ? med.image : `/img/${med.image}`}
                           alt={med.name}
-                          className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
+                          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-[#022c22]/10">
-                          <Pill size={44} className="text-[#c5a880]/20 mb-2" />
-                          <span className="text-[9px] font-bold text-[#c5a880]/30 tracking-widest uppercase font-serif">MediStore</span>
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/20">
+                          <Pill size={36} className="text-slate-700 mb-2" />
+                          <span className="text-[9px] font-bold text-slate-600 tracking-widest uppercase">MediStore</span>
                         </div>
                       )}
                       
-                      {/* Luxury Pop-up Action (View Details Overlay) */}
-                      <div className="absolute inset-0 bg-[#01140f]/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
+                      {/* স্মুথ ডিটেইলস ওভারলে */}
+                      <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
                         <Link 
                           href={`/shop/${med.id}`} 
-                          className="bg-gradient-to-br from-[#c5a880] to-[#8a7355] text-[#021e17] px-5 py-3 rounded-xl font-black text-[10px] tracking-widest flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl"
+                          className="bg-white text-slate-950 px-4 py-2.5 rounded-xl font-bold text-[11px] tracking-wider flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:bg-emerald-400 hover:text-slate-950"
                         >
                           <Eye size={14} /> VIEW DETAILS
                         </Link>
                       </div>
                     </div>
 
-                    {/* 📝 METADATA & DATA DETAILS CARD BODY */}
-                    <div className="p-6 flex flex-col flex-1 bg-gradient-to-b from-transparent to-[#01140f]/30">
-                      <div className="mb-6">
-                        <p className="text-[9px] text-[#c5a880] font-black uppercase tracking-[0.2em] mb-1.5">
+                    {/* 📝 CARD BODY */}
+                    <div className="p-5 flex flex-col flex-1 bg-gradient-to-b from-transparent to-slate-950/20">
+                      <div className="mb-4">
+                        <p className="text-[9px] text-emerald-400 font-bold tracking-wider uppercase mb-1">
                           {med.manufacturer || "GLOBAL PHARMA"}
                         </p>
-                        <h3 className="font-black text-lg text-white group-hover:text-[#c5a880] transition-colors uppercase font-serif tracking-wide line-clamp-1">
+                        <h3 className="font-bold text-base text-slate-100 group-hover:text-emerald-400 transition-colors tracking-wide line-clamp-1">
                           {med.name}
                         </h3>
                       </div>
 
-                      {/* Pricing and Direct Shopping Integration */}
-                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-[#c5a880]/5">
+                      {/* প্রাইস এবং মডার্ন কার্ট বাটন */}
+                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-800/40">
                         <div className="flex flex-col">
-                          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Price per unit</span>
-                          <span className="font-black text-xl text-white tracking-tight">৳{med.price}</span>
+                          <span className="text-[9px] text-slate-500 font-medium uppercase tracking-wider">Price</span>
+                          <span className="font-extrabold text-lg text-white">৳{med.price}</span>
                         </div>
 
                         <button
                           onClick={() => addToCart(med)}
                           disabled={med.stock <= 0}
-                          className="p-3.5 bg-gradient-to-br from-[#c5a880] to-[#8a7355] hover:from-white hover:to-slate-100 text-[#021e17] rounded-xl transition-all duration-300 shadow-md active:scale-90 disabled:opacity-10 disabled:cursor-not-allowed group/btn"
+                          className="p-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-600 rounded-xl transition-all duration-200 shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group/btn"
                         >
-                          <ShoppingCart size={16} fill="#021e17" className="group-hover/btn:scale-110 transition-transform" />
+                          <ShoppingCart size={15} className="transition-transform group-hover/btn:scale-110" />
                         </button>
                       </div>
                     </div>
                   </motion.div>
                 ))
               ) : (
-                /* Empty Product Error State Screen */
-                <div className="col-span-full text-center py-24 bg-[#02231b]/20 rounded-[2.5rem] border border-[#c5a880]/10 backdrop-blur-md">
-                  <Pill className="mx-auto mb-4 text-[#c5a880]/40 animate-pulse" size={40} />
-                  <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No Medicines found matching your search.</p>
+                /* Empty Product Screen */
+                <div className="col-span-full text-center py-20 bg-slate-900/20 rounded-[2rem] border border-slate-800 backdrop-blur-md">
+                  <Pill className="mx-auto mb-4 text-slate-700 animate-pulse" size={36} />
+                  <p className="text-slate-500 font-medium tracking-wide text-sm">No Medicines found matching your search.</p>
                 </div>
               )}
             </AnimatePresence>
