@@ -11,29 +11,50 @@ import {
 export default function SellerDashboard() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true); // 🎯 নতুন স্টেট: চেকিং শেষ হওয়া পর্যন্ত রিডাইরেক্ট আটকাবে
 
-  // 🛡️ ক্লায়েন্ট-সাইড সিকিউরিটি গার্ড (Vercel ও Render ফ্রেন্ডলি)
   useEffect(() => {
-    const userStr = localStorage.getItem("medistore_user");
-    
-    if (!userStr) {
-      // যদি লোকাল স্টোরেজে কোনো ইউজার ডাটা না থাকে, তাকে লগইন পেজে ব্যাক করাও
-      router.replace("/login");
-    } else {
+    const checkAuthorization = () => {
       try {
+        if (typeof window === "undefined") return;
+
+        const userStr = localStorage.getItem("medistore_user");
+        const token = localStorage.getItem("token");
+        
+        // যদি টোকেন বা ইউজার কোনোটিই না থাকে
+        if (!userStr || !token) {
+          console.warn("⚠️ No user session found, redirecting to login...");
+          router.replace("/login");
+          return;
+        }
+
         const user = JSON.parse(userStr);
-        // যদি ইউজার লগইন থাকে কিন্তু সে 'Seller' না হয় (যেমন কাস্টমার), তবে তাকে মেইন হোমে পাঠিয়ে দাও
-        if (user.role !== "Seller") {
+        const role = user?.role?.toUpperCase()?.trim();
+
+        console.log("🔐 Logged in User Role:", role);
+
+        // 🔥 রোল চেক: যদি সেলার না হয় তবেই হোমে পাঠাবে
+        if (role !== "SELLER") {
+          console.warn("🚫 Unauthorized role! Redirecting to home...");
           router.replace("/");
         } else {
-          // ইউজার যদি ভ্যালিড সেলার হয়, তবেই ড্যাশবোর্ড দেখাও
+          // পারফেক্ট সেলার হলে গেট পাস দিয়ে দাও
           setIsAuthorized(true);
         }
       } catch (e) {
         console.error("Auth check error", e);
         router.replace("/login");
+      } finally {
+        setCheckingAuth(false); // চেকিং সাকসেসফুলি শেষ
       }
-    }
+    };
+
+    // ⏳ ছোট একটা timeout দেওয়া হলো যেন ব্রাউজার লোকালস্টোরেজ রিড করার পর্যাপ্ত সময় পায়
+    const timer = setTimeout(() => {
+      checkAuthorization();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [router]);
 
   const stats = [
@@ -43,8 +64,8 @@ export default function SellerDashboard() {
     { label: "Pending Orders", value: "12", icon: <Clock size={24}/>, color: "text-orange-600", bg: "bg-orange-50" },
   ];
 
-  // ⏳ অথেন্টিকেশন চেক করার সময় এই লোডারটি স্ক্রিনে ফ্ল্যাশ হওয়া আটকাবে
-  if (!isAuthorized) {
+  // ⏳ চেকিং চলাকালীন বা অথরাইজড না হওয়া পর্যন্ত লোডার ধরে রাখবে, রিডাইরেক্ট করতে দেবে না
+  if (checkingAuth || !isAuthorized) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 font-black text-xs uppercase tracking-widest gap-2">
         <Loader2 className="animate-spin text-emerald-600" size={20} /> 
@@ -87,7 +108,6 @@ export default function SellerDashboard() {
               <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{stat.label}</p>
               <h3 className="text-2xl md:text-3xl font-black text-slate-900 mt-1 tracking-tight">{stat.value}</h3>
             </div>
-            {/* Background Decoration */}
             <Activity className="absolute -right-4 -bottom-4 text-slate-50 group-hover:text-slate-100 transition-colors pointer-events-none" size={100} />
           </motion.div>
         ))}
