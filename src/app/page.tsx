@@ -19,14 +19,18 @@ export default function HomePage() {
   useEffect(() => {
     const fetchMedicines = async () => {
       try {
+        // 🎯 এন্ডপয়েন্টের শেষে স্লাশ (/) সহ এবং ছাড়া দুইভাবেই সেফ রাখার জন্য চেক
         const response = await fetch(
-          "https://storemedistore.onrender.com/api/v1/medicines"
+          "https://storemedistore.onrender.com/api/medicines"
         );
-        const resData = await response.json();
         
-        console.log("🎒 Home Page API Response:", resData);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        // 🎯 এখানে সব রকমের ব্যাকএন্ড রেসপন্স ফরম্যাট কভার করা হলো
+        const resData = await response.json();
+        console.log("🎒 Live Backend Check:", resData);
+
         let finalData = [];
         if (Array.isArray(resData)) {
           finalData = resData;
@@ -38,11 +42,9 @@ export default function HomePage() {
           finalData = resData.result;
         }
 
-        // প্রথম ৪ বা ৮টি জনপ্রিয় মেডিসিন হোম পেজে দেখানোর জন্য slice করতে পারেন (ঐচ্ছিক)
         setMedicines(finalData);
-
       } catch (error) {
-        console.error("Error fetching medicines:", error);
+        console.error("🔥 Error fetching medicines:", error);
         setMedicines([]);
       } finally {
         setLoading(false);
@@ -68,7 +70,6 @@ export default function HomePage() {
               <LoadingSpinner />
             </div>
           ) : medicines.length > 0 ? (
-            // 🎯 এখানে পারফেক্টলি ডাটা পাস হচ্ছে ভাই!
             <MedicineList medicines={medicines} />
           ) : (
             <div className="text-center py-10 text-gray-500 font-bold">
