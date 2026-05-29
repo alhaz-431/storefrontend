@@ -1,11 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Sparkles, TrendingUp, ShieldCheck, ArrowUp, Zap, User, LogOut, ShoppingCart } from "lucide-react";
+import { Sparkles, TrendingUp, ShieldCheck, ArrowUp, Zap } from "lucide-react";
 import { motion, useScroll, useSpring } from "framer-motion";
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [cartCount, setCartCount] = useState(0);
   const { scrollYProgress } = useScroll();
   
   const scaleX = useSpring(scrollYProgress, {
@@ -23,30 +22,12 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // ২. কার্ট কাউন্ট হ্যান্ডলিং লজিক
-  useEffect(() => {
-    const updateCartCount = () => {
-      const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
-      const total = cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
-      setCartCount(total);
-    };
-
-    updateCartCount();
-    window.addEventListener("cartUpdated", updateCartCount);
-    return () => window.removeEventListener("cartUpdated", updateCartCount);
-  }, []);
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "/auth/login";
-  };
-
   return (
-    // 🎯 ওল্ড গ্রিন কালার চেঞ্জ করে মডার্ন মেটালিক ডার্ক ব্যাকগ্রাউন্ড আনা হলো
+    // 🎯 মডার্ন মেটালিক ডার্ক ব্যাকগ্রাউন্ড থিম
     <div className="min-h-screen bg-[#0a0f1d] via-[#0d1324] to-[#070b14] text-slate-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden relative">
       
       {/* 👑 TOP PREMIUM EMERALD PROGRESS BAR */}
@@ -63,50 +44,9 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
         }}
       />
 
-      {/* 🏛️ PREMIUM LUXURY TOP HEADER & NAVBAR */}
-      <nav className="w-full bg-[#0d1527]/80 border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-50 px-6 lg:px-16 py-4 flex items-center justify-between shadow-lg">
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 group cursor-pointer">
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-2xl shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-            <svg className="w-5 h-5 text-slate-950" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M4.5 10.5C3.67 10.5 3 11.17 3 12s.67 1.5 1.5 1.5h15c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5h-15z M10.5 4.5C10.5 3.67 11.17 3 12 3s1.5.67 1.5 1.5v15c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-15z"/>
-            </svg>
-          </div>
-          <span className="text-xl font-black uppercase tracking-[0.15em] text-white group-hover:text-emerald-400 transition-colors duration-300">
-            MEDI <span className="text-emerald-400 font-normal font-serif italic">STORE</span>
-          </span>
-        </div>
-
-        {/* Right Side Control Panel */}
-        <div className="flex items-center gap-4 md:gap-6">
-          {/* User Status Badge */}
-          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 bg-slate-950 border border-slate-800 rounded-full text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            <User size={13} className="text-emerald-400" />
-            <span>Logged In</span>
-          </div>
-
-          {/* Cart Floating Trigger */}
-          <button className="p-3 bg-slate-950 border border-slate-800 text-slate-300 rounded-xl hover:bg-emerald-500 hover:text-slate-950 hover:border-emerald-500 transition-all duration-300 shadow-md relative group">
-            <ShoppingCart size={16} />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-extrabold text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0a0f1d] shadow-lg">
-                {cartCount}
-              </span>
-            )}
-          </button>
-
-          {/* Luxury Logout Button */}
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 border border-slate-800 hover:bg-rose-500/10 hover:border-rose-500/30 text-slate-300 hover:text-rose-400 text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-200 active:scale-95"
-          >
-            <LogOut size={13} /> Logout
-          </button>
-        </div>
-      </nav>
-
       {/* 📣 WORLD-CLASS INFINITE GOLDEN MARQUEE ANNOUNCEMENT BAR */}
-      <div className="bg-slate-950/60 border-b border-slate-900 py-2.5 overflow-hidden sticky top-[69px] z-40 backdrop-blur-md w-full">
+      {/* এক্সট্রা নেভবার কেটে ফেলার কারণে এটিকে সরাসরি ওপরে sticky top-0 করে দেওয়া হলো */}
+      <div className="bg-slate-950/60 border-b border-slate-900 py-2.5 overflow-hidden sticky top-0 z-40 backdrop-blur-md w-full">
         <div className="flex whitespace-nowrap animate-marquee">
           <div className="flex gap-20 items-center pr-20 shrink-0">
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-emerald-400">

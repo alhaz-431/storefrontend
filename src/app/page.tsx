@@ -9,11 +9,10 @@ import HowItWorks from "@/components/home/HowItWorks";
 import Features from "@/components/home/Features";
 import Testimonials from "@/components/home/Testimonials";
 import CTA from "@/components/home/CTA";
-import MedicineList, { Medicine } from "@/components/medicines/MedicineList"; // ✅ সঠিক পাথ
+import MedicineList, { Medicine } from "@/components/medicines/MedicineList"; 
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function HomePage() {
-  // ✅ এখন আর 'never[]' এরর আসবে না, কারণ টাইপ ইম্পোর্ট করা হয়েছে
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,8 +23,24 @@ export default function HomePage() {
           "https://storemedistore.onrender.com/api/v1/medicines"
         );
         const resData = await response.json();
-        const finalData = resData?.data || resData;
-        setMedicines(Array.isArray(finalData) ? finalData : []);
+        
+        console.log("🎒 Home Page API Response:", resData);
+
+        // 🎯 এখানে সব রকমের ব্যাকএন্ড রেসপন্স ফরম্যাট কভার করা হলো
+        let finalData = [];
+        if (Array.isArray(resData)) {
+          finalData = resData;
+        } else if (resData && Array.isArray(resData.data)) {
+          finalData = resData.data;
+        } else if (resData && Array.isArray(resData.medicines)) {
+          finalData = resData.medicines;
+        } else if (resData && Array.isArray(resData.result)) {
+          finalData = resData.result;
+        }
+
+        // প্রথম ৪ বা ৮টি জনপ্রিয় মেডিসিন হোম পেজে দেখানোর জন্য slice করতে পারেন (ঐচ্ছিক)
+        setMedicines(finalData);
+
       } catch (error) {
         console.error("Error fetching medicines:", error);
         setMedicines([]);
@@ -53,6 +68,7 @@ export default function HomePage() {
               <LoadingSpinner />
             </div>
           ) : medicines.length > 0 ? (
+            // 🎯 এখানে পারফেক্টলি ডাটা পাস হচ্ছে ভাই!
             <MedicineList medicines={medicines} />
           ) : (
             <div className="text-center py-10 text-gray-500 font-bold">

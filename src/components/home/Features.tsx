@@ -14,10 +14,12 @@ export default function Features() {
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-6">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-800">আপনার বিশ্বস্ত <span className="text-emerald-600">অনলাইন ফার্মেসি</span></h2>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-800">আপনার বিশ্বস্ত <span className="text-emerald-600">
+              অনলাইন ফার্মেসি</span></h2>
             <p className="text-gray-600 text-sm md:text-base leading-relaxed">MediStore বাংলাদেশের সবচেয়ে বিশ্বস্ত অনলাইন মেডিসিন শপ। আমরা প্রদান করি ১০০% অরিজিনাল ওষুধ, দ্রুততম ডেলিভারি এবং সেরা কাস্টমার সার্ভিস।</p>
             <div className="space-y-4">
-              {["Licensed Pharmacists", "Quality Assured Products", "Easy Returns & Refunds", "Secure Online Payment"].map((benefit, i) => (
+              {["Licensed Pharmacists", "Quality Assured Products", "Easy Returns & Refunds", 
+              "Secure Online Payment"].map((benefit, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0"><FiCheckCircle className="text-emerald-600" size={14} /></div>
                   <span className="text-gray-700 font-semibold text-sm md:text-base">{benefit}</span>

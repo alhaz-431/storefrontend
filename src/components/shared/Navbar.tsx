@@ -68,25 +68,24 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { name: "Home", href: "/", icon: <Home size={16} /> },
-    { name: "Shop", href: "/shop", icon: <Store size={16} /> },
-    ...(isAdmin ? [{ name: "Categories", href: "/admin/categories", icon: <Layers3 size={16} /> }] : []),
+    { name: "Home", href: "/", icon: <Home size={15} /> },
+    { name: "Shop", href: "/shop", icon: <Store size={15} /> },
+    ...(isAdmin ? [{ name: "Categories", href: "/admin/categories", icon: <Layers3 size={15} /> }] : []),
   ];
 
   return (
-    /* 🎯 সম্পূর্ণ ডার্ক ডেটল গ্রিন থিম ব্যাকগ্রাউন্ড এবং গ্লাস-মর্ফিজম বর্ডার */
-    <nav className="sticky top-0 w-full bg-[#020d0a]/90 backdrop-blur-md border-b border-white/5 z-[100] shadow-lg shadow-[#020d0a]/50">
+    <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200/80 z-[100] shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* LOGO - গ্লোয়িং ডেটল গ্রিন */}
-        <Link href="/" className="flex items-center gap-2 text-xl font-black text-white tracking-tighter italic group">
-          <div className="w-9 h-9 rounded-xl bg-[#006643]/20 border border-[#006643]/40 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <Pill className="text-[#006643] drop-shadow-[0_0_8px_#006643]" size={22} />
+        {/* 1. LEFT SIDE: LOGO (মোবাইল ও ডেস্কটপ দুই জায়গাতেই সমানভাবে বামে থাকবে) */}
+        <Link href="/" className="flex items-center gap-2 text-xl font-black text-slate-900 tracking-tighter italic group">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <Pill className="text-emerald-600" size={20} />
           </div>
-          <span>MEDI<span className="text-[#006643]">STORE</span></span>
+          <span>MEDI<span className="text-emerald-600 font-bold">STORE</span></span>
         </Link>
 
-        {/* DESKTOP LINKS - ফুললি রেসপন্সিভ এবং নিট টেক্সট */}
+        {/* 2. MIDDLE: DESKTOP NAVIGATION LINKS (মোবাইলে লুকানো থাকবে - hidden md:flex) */}
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
@@ -94,8 +93,8 @@ export default function Navbar() {
               <Link 
                 key={link.name} 
                 href={link.href} 
-                className={`flex items-center gap-2 text-[11px] font-black uppercase tracking-wider transition-all py-2 px-1 border-b-2 ${
-                  isActive ? "text-[#006643] border-[#006643]" : "text-slate-400 border-transparent hover:text-slate-200"
+                className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider transition-all py-2 px-1 border-b-2 ${
+                  isActive ? "text-emerald-600 border-emerald-600" : "text-slate-500 border-transparent hover:text-slate-900"
                 }`}
               >
                 {link.icon} {link.name}
@@ -106,28 +105,28 @@ export default function Navbar() {
           {isLoggedIn && (
             <button 
               onClick={() => router.push(getDashboardPath())} 
-              className={`flex items-center gap-2 text-[11px] font-black uppercase tracking-wider transition-all py-2 px-1 border-b-2 ${
-                pathname.includes("dashboard") ? "text-[#006643] border-[#006643]" : "text-slate-400 border-transparent hover:text-slate-200"
+              className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider transition-all py-2 px-1 border-b-2 ${
+                pathname.includes("dashboard") ? "text-emerald-600 border-emerald-600" : "text-slate-500 border-transparent hover:text-slate-900"
               }`}
             >
-              <LayoutDashboard size={16} /> Dashboard
+              <LayoutDashboard size={15} /> Dashboard
             </button>
           )}
         </div>
 
-        {/* RIGHT CONTROLS - কার্ট এবং লগইন/লগআউট */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* 3. RIGHT SIDE CONTROLS: (মোবাইলে লোগোর ঠিক ডানে লাইন ধরে কার্ট এবং হ্যামবার্গার আইকন দেখাবে) */}
+        <div className="flex items-center gap-2 sm:gap-4">
           
-          {/* কার্ট বাটন - ডার্ক থিম গ্লো */}
-          <Link href="/customer/cart" className="relative p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-slate-300 hover:bg-[#006643] hover:text-white hover:border-[#006643] transition-all shadow-inner">
-            <ShoppingCart size={18} />
+          {/* 🛒 CART ICON: (মোবাইল ও ডেস্কটপ সব স্ক্রিনেই সবসময় ভিজিবল থাকবে) */}
+          <Link href="/customer/cart" className="relative p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all shadow-sm">
+            <ShoppingCart size={16} />
             <AnimatePresence>
               {cartCount > 0 && (
                 <motion.span 
                   initial={{ scale: 0 }} 
                   animate={{ scale: 1 }} 
                   exit={{ scale: 0 }}
-                  className="absolute -top-1.5 -right-1.5 bg-[#006643] text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full font-black shadow-lg shadow-[#006643]/30"
+                  className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full font-extrabold shadow-md border-2 border-white"
                 >
                   {cartCount}
                 </motion.span>
@@ -135,37 +134,37 @@ export default function Navbar() {
             </AnimatePresence>
           </Link>
 
-          {/* লগইন/লগআউট ডেস্কটপ বাটন */}
+          {/* DESKTOP ONLY: LOGIN/LOGOUT BUTTON (মোবাইলে এই বাটনটি ডিরেক্টলি ড্রয়ারের ভেতর চলে যাবে) */}
           <div className="hidden md:block">
             {isLoggedIn ? (
-              <button onClick={handleLogout} className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-red-500 hover:text-white transition-all">
+              <button onClick={handleLogout} className="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-rose-600 hover:text-white transition-all shadow-sm">
                 Logout
               </button>
             ) : (
-              <Link href="/login" className="px-5 py-2.5 bg-[#006643] text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-[#004d32] transition-all shadow-md shadow-[#006643]/20 block">
+              <Link href="/login" className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10 block">
                 Login
               </Link>
             )}
           </div>
 
-          {/* মোবাইল মেনু টগল বাটন */}
+          {/* 🍔 HAMBURGER ICON: (শুধুমাত্র মোবাইলেই দেখা যাবে - md:hidden এবং কার্ট আইকনের ঠিক পাশে থাকবে) */}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className="md:hidden p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-slate-400 hover:text-white transition-colors"
+            className="md:hidden p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 transition-colors"
           >
-            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      {/* MOBILE DRAWER - ১০০% রেসপন্সিভ এবং ক্লিপড লেআউট */}
+      {/* 📱 MOBILE MOBILE DRAWER MENU (হ্যামবার্গার ক্লিক করলে এটার ভেতর সব আইটেম আসবে) */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div 
             initial={{ opacity: 0, height: 0 }} 
             animate={{ opacity: 1, height: "auto" }} 
             exit={{ opacity: 0, height: 0 }} 
-            className="md:hidden bg-[#020d0a] border-b border-white/5 overflow-hidden"
+            className="md:hidden bg-white border-b border-slate-200 overflow-hidden"
           >
             <div className="px-4 pt-2 pb-6 flex flex-col gap-2">
               {navLinks.map((link) => {
@@ -176,7 +175,7 @@ export default function Navbar() {
                     href={link.href} 
                     onClick={() => setIsMenuOpen(false)} 
                     className={`flex items-center gap-4 p-3 rounded-xl font-bold uppercase text-xs tracking-wider transition-all ${
-                      isActive ? "bg-[#006643]/20 text-[#006643] border border-[#006643]/20" : "text-slate-400 hover:bg-white/[0.02] hover:text-slate-200"
+                      isActive ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
                     {link.icon} {link.name}
@@ -188,22 +187,23 @@ export default function Navbar() {
                 <button 
                   onClick={() => { router.push(getDashboardPath()); setIsMenuOpen(false); }} 
                   className={`flex items-center gap-4 p-3 rounded-xl font-bold uppercase text-xs tracking-wider text-left w-full transition-all ${
-                    pathname.includes("dashboard") ? "bg-[#006643]/20 text-[#006643] border border-[#006643]/20" : "text-slate-400 hover:bg-white/[0.02] hover:text-slate-200"
+                    pathname.includes("dashboard") ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`}
                 >
-                  <LayoutDashboard size={16} /> Dashboard
+                  <LayoutDashboard size={15} /> Dashboard
                 </button>
               )}
               
-              <div className="h-[1px] bg-white/5 my-2" />
+              <div className="h-[1px] bg-slate-200/60 my-2" />
               
+              {/* মোবাইল ড্রয়ারের একদম নিচে লগইন/লগআউট অ্যাকশন */}
               {isLoggedIn ? (
-                <button onClick={handleLogout} className="w-full p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-bold text-xs uppercase tracking-wider text-left flex items-center gap-4 hover:bg-red-500 hover:text-white transition-all">
-                  <LogOut size={16} /> Logout
+                <button onClick={handleLogout} className="w-full p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl font-bold text-xs uppercase tracking-wider text-left flex items-center gap-4 hover:bg-rose-600 hover:text-white transition-all">
+                  <LogOut size={15} /> Logout
                 </button>
               ) : (
-                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="w-full p-3 bg-[#006643] text-white rounded-xl font-bold text-xs uppercase tracking-wider text-center flex items-center justify-center gap-2 hover:bg-[#004d32] transition-all">
-                  <User size={16} /> Login
+                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="w-full p-3 bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider text-center flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
+                  <User size={15} /> Login
                 </Link>
               )}
             </div>

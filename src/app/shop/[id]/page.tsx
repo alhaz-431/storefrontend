@@ -72,33 +72,35 @@ export default function MedicineDetails() {
     localStorage.setItem("medistore_cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
     
+    // 🎯 টোস্ট মেসেজের ওল্ড থিম কালার চেঞ্জ করে মডার্ন ইমারল্ড করা হলো
     toast.success(`${medicine.name} added to cart!`, {
       position: "bottom-right",
-      style: { background: "#c5a880", color: "#021e17", fontWeight: "900", borderRadius: "15px" }
+      style: { background: "#10b981", color: "#ffffff", fontWeight: "600", borderRadius: "12px" }
     });
   };
 
-  if (loading) return <div className="h-[70vh] flex items-center justify-center text-[#c5a880] italic font-serif text-2xl font-black uppercase tracking-widest animate-pulse">Loading Details...</div>;
-  if (!medicine) return <div className="h-[70vh] flex items-center justify-center text-red-400 font-serif text-2xl font-black uppercase tracking-widest">Product Not Found</div>;
+  // 🎯 লোডিং ও নট ফাউন্ড স্ক্রিনের ওল্ড কালার আপডেট করা হলো
+  if (loading) return <div className="h-[70vh] flex items-center justify-center text-emerald-400 italic font-serif text-2xl font-black uppercase tracking-widest animate-pulse">Loading Details...</div>;
+  if (!medicine) return <div className="h-[70vh] flex items-center justify-center text-rose-500 font-serif text-2xl font-black uppercase tracking-widest">Product Not Found</div>;
 
   return (
-    <div className="pb-24 selection:bg-[#c5a880]/30 text-slate-200">
+    <div className="pb-24 selection:bg-emerald-500/30 text-slate-200">
       <div className="max-w-6xl mx-auto pt-4">
         
-        {/* 🏛️ LUXURY BACK BUTTON */}
+        {/* 🏛️ LUXURY BACK BUTTON (হভার কালার মডার্ন ইমারল্ড গ্রিন করা হলো) */}
         <button 
           onClick={() => router.back()} 
-          className="flex items-center gap-2 text-slate-400 hover:text-[#c5a880] mb-10 font-black uppercase text-[10px] tracking-[0.2em] transition-all group px-4 lg:px-0"
+          className="flex items-center gap-2 text-slate-400 hover:text-emerald-400 mb-10 font-black uppercase text-[10px] tracking-[0.2em] transition-all group px-4 lg:px-0"
         >
           <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" /> Back to Apothecary
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center px-4 lg:px-0">
           
-          {/* 🖼️ LEFT SIDE: PREMIUM IMAGE CONTAINER */}
-          <div className="aspect-square bg-gradient-to-b from-[#02231b]/60 to-[#01140f]/80 border border-[#c5a880]/15 rounded-[3rem] flex items-center justify-center overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative group p-8">
-            {/* Geometric Luxury Mesh Overlay */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(197,168,128,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(197,168,128,0.01)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
+          {/* 🖼️ LEFT SIDE: PREMIUM IMAGE CONTAINER (ওল্ড ডার্টি গ্রিন টু মেটালিক ডার্ক গ্লাস কনভার্ট) */}
+          <div className="aspect-square bg-gradient-to-b from-slate-900/60 to-slate-950/80 border border-slate-800/60 rounded-[3rem] flex items-center justify-center overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.6)] relative group p-8">
+            {/* Fine Futuristic Mesh Overlay */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
 
             {medicine.image ? (
               <img
@@ -108,14 +110,14 @@ export default function MedicineDetails() {
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center relative z-10">
-                <Pill size={70} className="text-[#c5a880]/20 mb-4 animate-bounce" />
-                <div className="text-[#c5a880]/10 font-black text-3xl font-serif italic uppercase tracking-wider">MediStore</div>
+                <Pill size={70} className="text-slate-800 mb-4 animate-bounce" />
+                <div className="text-slate-800 font-black text-3xl font-serif italic uppercase tracking-wider">MediStore</div>
               </div>
             )}
             
             {/* Live Stock Status Indicator */}
             <div className="absolute top-6 right-6 z-20">
-              <span className={`text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border backdrop-blur-md ${medicine.stock > 0 ? 'bg-[#022c22]/80 text-emerald-400 border-emerald-500/20' : 'bg-red-950/80 text-red-400 border-red-500/20'}`}>
+              <span className={`text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border backdrop-blur-md ${medicine.stock > 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
                 {medicine.stock > 0 ? 'In Stock' : 'Out Of Stock'}
               </span>
             </div>
@@ -123,24 +125,24 @@ export default function MedicineDetails() {
 
           {/* 📝 RIGHT SIDE: LUXURY PRODUCT SPECIFICATIONS */}
           <div className="flex flex-col justify-center">
-            <p className="text-[#c5a880] font-black uppercase text-[9px] tracking-[0.3em] mb-3">
+            <p className="text-emerald-400 font-bold uppercase text-[10px] tracking-[0.25em] mb-3">
               {medicine.manufacturer || "GLOBAL PHARMA"}
             </p>
-            <h1 className="text-4xl md:text-6xl font-black uppercase font-serif tracking-wide mb-6 text-white leading-tight">
+            <h1 className="text-4xl md:text-5xl font-black uppercase font-serif tracking-wide mb-6 text-white leading-tight">
               {medicine.name}
             </h1>
-            <p className="text-slate-400 mb-10 text-sm leading-relaxed font-medium bg-[#01140f]/30 p-6 rounded-2xl border border-[#c5a880]/5">
+            <p className="text-slate-400 mb-10 text-sm leading-relaxed font-medium bg-slate-900/30 p-6 rounded-2xl border border-slate-800/40">
               {medicine.description || "No specific formulation description available for this curative token. Please consult a registered practitioner before final administration."}
             </p>
 
-            {/* Architectural Price & Stock Grid Info */}
-            <div className="grid grid-cols-2 gap-6 mb-10 bg-gradient-to-r from-[#02231b]/60 to-[#01140f]/40 border border-[#c5a880]/10 p-6 rounded-3xl backdrop-blur-md">
+            {/* Architectural Price & Stock Grid Info (ওল্ড গ্রিন ব্যাকগ্রাউন্ড ফিক্সড) */}
+            <div className="grid grid-cols-2 gap-6 mb-10 bg-gradient-to-r from-slate-900/60 to-slate-950/40 border border-slate-800/60 p-6 rounded-3xl backdrop-blur-md">
               <div className="flex flex-col">
-                <span className="text-[8px] text-[#c5a880] font-black uppercase tracking-widest mb-1">Price Per Unit</span>
+                <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest mb-1">Price Per Unit</span>
                 <span className="text-3xl font-black text-white tracking-tight">৳{medicine.price}</span>
               </div>
               
-              <div className="border-l border-[#c5a880]/10 pl-6 flex flex-col justify-center">
+              <div className="border-l border-slate-800/80 pl-6 flex flex-col justify-center">
                 <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Available Reserve</span>
                 <p className="font-black text-xl text-slate-200">
                   {medicine.stock} <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Units</span>
@@ -148,13 +150,13 @@ export default function MedicineDetails() {
               </div>
             </div>
 
-            {/* Add To Cart Luxury Action Button */}
+            {/* Add To Cart Premium Action Button */}
             <button 
               onClick={handleAdd}
               disabled={medicine.stock <= 0}
-              className="w-full bg-gradient-to-br from-[#c5a880] to-[#8a7355] hover:from-white hover:to-slate-100 disabled:opacity-10 disabled:cursor-not-allowed py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all duration-300 shadow-[0_15px_40px_rgba(0,0,0,0.5)] active:scale-[0.98] flex items-center justify-center gap-3 text-[#021e17] group"
+              className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-600 rounded-2xl font-black uppercase text-xs tracking-widest transition-all duration-300 shadow-[0_15px_40px_rgba(16,185,129,0.15)] active:scale-[0.98] flex items-center justify-center gap-3 group py-4.5"
             >
-              Add to Shopping Cart <ShoppingCart size={16} fill="#021e17" className="group-hover:scale-110 transition-transform" />
+              Add to Shopping Cart <ShoppingCart size={15} className="group-hover:scale-110 transition-transform" />
             </button>
           </div>
 
