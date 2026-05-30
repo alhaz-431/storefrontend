@@ -5,36 +5,23 @@ export interface Medicine {
   id: string;
   name: string;
   price: number;
-  image: string;
+  image: string; // এখানে ক্লাউডিনারি থেকে আসা URL থাকবে
   category: any; 
   stock: number;
 }
 
 interface MedicineListProps {
-  medicines: Medicine[];
+  medicines: any; // কারণ ব্যাকএন্ড থেকে অনেক সময় অবজেক্ট ফরম্যাটে ডাটা আসতে পারে
 }
 
 export default function MedicineList({ medicines }: MedicineListProps) {
   
-  // 🎯 জাদুকরী ডিফেন্সিভ লজিক: ডাটা যেভাবে বা যে ফরম্যাটেই আসুক, সেটিকে সেফলি অ্যারে-তে রূপান্তর করবে
-  let safeMedicines: Medicine[] = [];
+  // ডাটা ফিল্টার ও সেফলি অ্যারে তৈরি করার লজিক
+  const safeMedicines: Medicine[] = Array.isArray(medicines) 
+    ? medicines 
+    : (medicines?.data || medicines?.medicines || medicines?.result || []);
 
-  if (Array.isArray(medicines)) {
-    safeMedicines = medicines;
-  } else if (medicines && typeof medicines === "object") {
-    // যদি ব্যাকএন্ড থেকে পুরো অবজেক্ট পাস করা হয়, তবে তার ভেতর থেকে অ্যারে খুঁজে বের করবে
-    const anyObj = medicines as any;
-    if (Array.isArray(anyObj.data)) {
-      safeMedicines = anyObj.data;
-    } else if (Array.isArray(anyObj.medicines)) {
-      safeMedicines = anyObj.medicines;
-    } else if (Array.isArray(anyObj.result)) {
-      safeMedicines = anyObj.result;
-    }
-  }
-
-  // 🔍 যদি সব চেক করার পরেও কোনো ডাটা না পাওয়া যায়
-  if (!safeMedicines || safeMedicines.length === 0) {
+  if (safeMedicines.length === 0) {
     return (
       <div className="w-full text-center py-10">
         <p className="text-gray-500 text-lg font-medium">No medicines found at the moment.</p>
@@ -45,6 +32,7 @@ export default function MedicineList({ medicines }: MedicineListProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {safeMedicines.map((item) => (
+        // MedicineCard অলরেডি আপডেট করা আছে, তাই এটি এখন ক্লাউডিনারি ইমেজ লোড করবে
         <MedicineCard key={item.id} medicine={item} />
       ))}
     </div>

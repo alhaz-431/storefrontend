@@ -14,7 +14,7 @@ interface MedicineProps {
 }
 
 export default function MedicineCard({ medicine }: { medicine: MedicineProps }) {
-  // ১. ক্যাটাগরি এবং নাম বের করার লজিক (অবজেক্ট বা স্ট্রিং যাই আসুক হ্যান্ডেল করবে)
+  // ক্যাটাগরি এবং নাম বের করার লজিক
   const categoryName = typeof medicine.category === 'object' 
     ? medicine.category?.name 
     : (medicine.category || "General");
@@ -23,7 +23,7 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
     ? medicine.name?.name 
     : medicine.name;
 
-  // ২. কার্টে অ্যাড করার ফাংশন
+  // কার্টে অ্যাড করার ফাংশন
   const handleAddToCart = () => {
     try {
       const cart = JSON.parse(localStorage.getItem("medistore_cart") || "[]");
@@ -36,8 +36,8 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
           ...medicine, 
           medicineId: medicine.id, 
           quantity: 1,
-          // কার্ট পেজের জন্য সঠিক ইমেজ পাথ সেট করা
-          image: medicine.image.startsWith('/') ? medicine.image : `/img/${medicine.image}`
+          // ক্লাউডিনারি থেকে আসা ইমেজ লিংক সরাসরি সেট করা হচ্ছে
+          image: medicine.image
         });
       }
 
@@ -54,15 +54,16 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
       whileHover={{ y: -5 }}
       className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
     >
-      
-      {/* ইমেজ সেকশন - এখানে আপনার ডাইনামিক ইমেজ লজিক ঠিক করে দেওয়া হয়েছে */}
+      {/* ইমেজ সেকশন - Cloudinary URL লজিক */}
       <div className="relative h-48 w-full overflow-hidden bg-gray-50">
         {medicine.image ? (
           <img 
-            // যদি ডাটাবেসে থাকে med2.jpg, তবে এটি হবে /img/med2.jpg
-            src={medicine.image.startsWith('/') ? medicine.image : `/img/${medicine.image}`} 
+            src={medicine.image} 
             alt={medicineName} 
-            className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500" 
+            className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://placehold.co/200x200?text=No+Image";
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 font-medium italic">
@@ -86,7 +87,6 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
         <p className="text-lg font-black text-gray-900 mb-4">{medicine.price}৳</p>
 
         <div className="flex gap-2">
-          {/* Details Link */}
           <Link 
             href={`/shop/${medicine.id}`}
             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all"
@@ -94,7 +94,6 @@ export default function MedicineCard({ medicine }: { medicine: MedicineProps }) 
             <FiInfo className="text-sm" /> Details
           </Link>
 
-          {/* Add Button */}
           <button 
             onClick={handleAddToCart}
             disabled={medicine.stock <= 0}

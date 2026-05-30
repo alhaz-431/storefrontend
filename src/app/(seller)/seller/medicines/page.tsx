@@ -72,7 +72,7 @@ export default function SellerMedicines() {
       manufacturer: med.manufacturer || "",
       categoryId: med.category?.id || DEFAULT_CATEGORY_ID,
       description: med.description || "",
-      imageFile: null, // এডিটের শুরুতে ইমেজ ফাইল আমরা ফাঁকা রাখবো যেন পুরনো .avif জ্যাম না পাকায়
+      imageFile: null,
     });
     setIsModalOpen(true);
   };
@@ -97,25 +97,20 @@ export default function SellerMedicines() {
     try {
       const data = new FormData();
       
-      // 🎯 ১. টেক্সট ডাটাগুলো FormData-তে পুশ করা
       Object.entries(formData).forEach(([key, value]) => {
         if (key !== "imageFile" && value !== null && value !== undefined && value !== "") {
           data.append(key, String(value));
         }
       });
       
-      // সেফটি চেক: যদি ক্যাটাগরি আইডি কোন কারণে মিস হয়
       if (!formData.categoryId) {
         data.append("categoryId", DEFAULT_CATEGORY_ID);
       }
 
-      // 🎯 ২. ইমেজের নিখুঁত লজিক
-      // ইউজার নতুন কোনো ফাইল সিলেক্ট করলেই কেবল তা পাঠানো হবে, নতুবা ব্যাকএন্ডে পুরনো ফাইলই থাকবে
       if (formData.imageFile instanceof File) {
         data.append("image", formData.imageFile);
       }
 
-      // 🚀 ৩. ব্যাকএন্ডে রিকোয়েস্ট পাঠানো
       if (editingMedicine) {
         await api.medicines.update(editingMedicine.id, data);
         toast.success("Updated successfully!", { id: toastId });
@@ -142,7 +137,6 @@ export default function SellerMedicines() {
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 p-4 md:p-10 font-sans">
       <div className="max-w-7xl mx-auto">
         
-        {/* HEADER */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-black text-slate-900">
             Inventory <span className="text-[#008249]">Management</span>
@@ -155,7 +149,6 @@ export default function SellerMedicines() {
           </button>
         </div>
 
-        {/* SEARCH BAR */}
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input 
@@ -167,7 +160,6 @@ export default function SellerMedicines() {
           />
         </div>
 
-        {/* TABLE SECTION */}
         <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -195,14 +187,12 @@ export default function SellerMedicines() {
                 ) : (
                   filtered.map((med) => (
                     <tr key={med.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
-                      {/* 🖼️ আপনার রেন্ডার সার্ভারের লিঙ্ক সহ ইমেজ কলাম */}
                       <td className="px-8 py-4 font-bold text-slate-900 flex items-center gap-3">
-                        <img 
-                          src={med.image ? (med.image.startsWith('http') ? med.image : `https://storemedistore.onrender.com/${med.image}`) : "https://placehold.co/50x50?text=No+Image"} 
+                       <img 
+                          src={med.image || "https://placehold.co/50x50?text=No+Image"} 
                           alt={med.name}
                           className="w-10 h-10 object-cover rounded-lg bg-slate-100"
                           onError={(e) => {
-                            // সার্ভারে ইমেজ না থাকলে (যেমন ENOENT এরর) এটি ব্যাকআপ ইমেজ হিসেবে No Image দেখাবে
                             (e.target as HTMLImageElement).src = "https://placehold.co/50x50?text=No+Image";
                           }}
                         />
@@ -236,7 +226,6 @@ export default function SellerMedicines() {
         </div>
       </div>
 
-      {/* DIALOG / MODAL */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -314,7 +303,6 @@ export default function SellerMedicines() {
                   className="w-full p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-[#E6F4ED] file:text-[#008249] hover:file:bg-[#d2ebd9] file:cursor-pointer text-slate-600" 
                   onChange={e => setFormData({...formData, imageFile: e.target.files?.[0] || null})} 
                 />
-                {/* 🎯 কন্ডিশনাল মেসেজ */}
                 {formData.imageFile instanceof File ? (
                   <p className="text-xs text-[#008249] font-medium mt-1">✓ New Selected: {formData.imageFile.name}</p>
                 ) : editingMedicine && editingMedicine.image ? (
