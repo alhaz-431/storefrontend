@@ -94,8 +94,9 @@ export const api = {
     cancel: (id: string) => fetcher(`/orders/${id}/cancel`, { method: "PATCH" }),
   },
 
-  // ✅ নতুন যোগ করা হলো যাতে আপনার অর্ডার পেজে আর এরর না দেয়
   seller: {
     getOrders: () => fetcher("/seller/orders"),
+    updateOrderStatus: (id: string, status: string) => 
+        fetcher(`/seller/orders/${id}/status`, { method: "PATCH", body: { status } }),
   }
 } as const;
