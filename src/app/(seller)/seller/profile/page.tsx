@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  User, Mail, Phone, MapPin, Edit3, Save, BadgeCheck, X, Loader2 
-} from "lucide-react";
+import { User, Mail, Phone, MapPin, Edit3, Save, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 interface SellerData {
@@ -30,28 +28,24 @@ export default function SellerProfile() {
 
   const [tempData, setTempData] = useState<SellerData>({ ...sellerInfo });
 
-  // ব্যাকএন্ড বেস ইউআরএল
   const API_BASE = "https://storemedistore.onrender.com/api";
 
-  // প্রোফাইল ডাটা লোড করার ফাংশন
   const loadProfileData = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
-      
       const res = await fetch(`${API_BASE}/auth/me`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
-      
       const data = await res.json();
       const user = data.data || data;
 
       if (user) {
         const fetchedData = {
-          name: user.name || "MediStore Seller",
+          name: user.name || "",
           email: user.email || "",
-          phone: user.phone && user.phone !== "Not set yet" ? user.phone : "",
-          address: user.address && user.address !== "Not set yet" ? user.address : "",
+          phone: user.phone || "",
+          address: user.address || "",
           role: user.role || "Seller"
         };
         setSellerInfo(fetchedData);
@@ -73,22 +67,26 @@ export default function SellerProfile() {
     const toastId = toast.loading("আপডেট হচ্ছে...");
     try {
       const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
+      
+      // যেহেতু ডাটাবেজে আপাতত শুধু 'name' আপডেট করার ফিল্ড আছে
+      const payload = { name: tempData.name };
+
       const res = await fetch(`${API_BASE}/auth/profile`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(tempData)
+        body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error("আপডেট ব্যর্থ হয়েছে");
+      if (!res.ok) throw new Error("আপডেট ব্যর্থ হয়েছে");
 
       setSellerInfo(tempData);
       setIsEditing(false);
-      toast.success("সফলভাবে আপডেট হয়েছে!", { id: toastId });
+      toast.success("সফলভাবে আপডেট হয়েছে!", { id: toastId });
     } catch (error) {
-      toast.error("আপডেট করা সম্ভব হয়নি", { id: toastId });
+      toast.error("আপডেট করা সম্ভব হয়নি", { id: toastId });
     } finally {
       setUpdating(false);
     }
@@ -107,7 +105,7 @@ export default function SellerProfile() {
           <h1 className="text-3xl font-black">MY <span className="text-emerald-600">ACCOUNT</span></h1>
           <button 
             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-            className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold"
+            className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold transition hover:bg-emerald-700"
           >
             {isEditing ? (updating ? "Saving..." : "Save Changes") : "Edit Profile"}
           </button>
@@ -128,23 +126,14 @@ export default function SellerProfile() {
               <label className="text-[10px] font-bold text-slate-400 uppercase">Email</label>
               <input disabled className="w-full p-3 mt-1 bg-slate-100 rounded-xl border" value={sellerInfo.email} />
             </div>
+            {/* Phone ও Address এর জন্য ডাটাবেজ আপডেট প্রয়োজন */}
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
-              <input 
-                disabled={!isEditing}
-                className="w-full p-3 mt-1 bg-slate-50 rounded-xl border border-slate-200"
-                value={isEditing ? tempData.phone : sellerInfo.phone}
-                onChange={e => setTempData({...tempData, phone: e.target.value})}
-              />
+              <input disabled className="w-full p-3 mt-1 bg-slate-100 rounded-xl border" value={sellerInfo.phone || "N/A"} />
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase">Address</label>
-              <input 
-                disabled={!isEditing}
-                className="w-full p-3 mt-1 bg-slate-50 rounded-xl border border-slate-200"
-                value={isEditing ? tempData.address : sellerInfo.address}
-                onChange={e => setTempData({...tempData, address: e.target.value})}
-              />
+              <input disabled className="w-full p-3 mt-1 bg-slate-100 rounded-xl border" value={sellerInfo.address || "N/A"} />
             </div>
           </div>
         </div>
