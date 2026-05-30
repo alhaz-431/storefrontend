@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
-import { Edit3, Trash2, X } from "lucide-react";
+import { Edit3, Trash2, X, Plus } from "lucide-react";
 
 export default function SellerMedicines() {
   const [medicines, setMedicines] = useState<any[]>([]);
@@ -14,7 +14,7 @@ export default function SellerMedicines() {
   const fetchMedicines = async () => {
     try {
       const res = await api.medicines.getAll();
-      setMedicines(res.data || []);
+      setMedicines(Array.isArray(res) ? res : res.data || []);
     } catch { toast.error("ডাটা লোড হয়নি"); }
   };
 
@@ -24,59 +24,67 @@ export default function SellerMedicines() {
     e.preventDefault();
     const data = new FormData();
     data.append("name", formData.name);
-    data.append("price", formData.price.toString());
-    data.append("stock", formData.stock.toString());
-    data.append("manufacturer", "Generic"); // ডিফল্ট ভ্যালু
+    data.append("price", formData.price);
+    data.append("stock", formData.stock);
     if (file) data.append("image", file);
 
     const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
     const config = { headers: { 'Authorization': `Bearer ${token}` } };
 
     try {
-      if (editingId) {
-        await api.medicines.update(editingId, data, config);
-        toast.success("আপডেট সফল!");
-      } else {
-        await api.medicines.create(data, config);
-        toast.success("সফলভাবে যোগ হয়েছে!");
-      }
+      if (editingId) await api.medicines.update(editingId, data, config);
+      else await api.medicines.create(data, config);
+      
+      toast.success("সফল হয়েছে!");
       setIsModalOpen(false);
       fetchMedicines();
       setFormData({ name: "", price: "", stock: "" });
-      setEditingId(null);
-    } catch (err: any) { 
-      console.error(err);
-      toast.error("সেভ করতে সমস্যা হয়েছে! কনসোল চেক করুন"); 
-    }
+    } catch { toast.error("সেভ করতে সমস্যা হয়েছে!"); }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("ডিলিট করতে চান?")) return;
+    if (!confirm("নিশ্চিত ডিলিট করতে চান?")) return;
     const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
     try {
       await api.medicines.delete(id, { headers: { 'Authorization': `Bearer ${token}` } });
-      toast.success("ডিলিট সফল!");
       fetchMedicines();
+      toast.success("ডিলিট সফল!");
     } catch { toast.error("ডিলিট হয়নি!"); }
   };
 
   return (
-    <div className="p-4 md:p-10 w-full max-w-7xl mx-auto">
-      <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold">+ Add Product</button>
-      
-      <div className="mt-6 overflow-x-auto w-full bg-white shadow-sm rounded-xl border">
-        <table className="w-full min-w-[700px] text-left">
-          <thead className="bg-gray-50">
-            <tr><th className="p-4">Image</th><th className="p-4">Name</th><th className="p-4">Price</th><th className="p-4">Stock</th><th className="p-4">Actions</th></tr>
+    <div className="p-8 max-w-7xl mx-auto">
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-extrabold text-gray-800">Inventory Management</h1>
+        <button 
+          onClick={() => { setEditingId(null); setIsModalOpen(true); }} 
+          className="bg-green-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-green-700 transition"
+        >
+          <Plus size={20} /> Add Product
+        </button>
+      </div>
+
+      {/* Table Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="p-4 font-semibold text-gray-600">Image</th>
+              <th className="p-4 font-semibold text-gray-600">Name</th>
+              <th className="p-4 font-semibold text-gray-600">Price</th>
+              <th className="p-4 font-semibold text-gray-600">Stock</th>
+              <th className="p-4 font-semibold text-gray-600 text-right">Actions</th>
+            </tr>
           </thead>
           <tbody>
             {medicines.map((m) => (
-              <tr key={m.id} className="border-t">
-                <td className="p-4"><img src={m.image || "https://placehold.co/50"} className="w-12 h-12 rounded-lg object-cover" /></td>
-                <td className="p-4 font-semibold">{m.name}</td>
+              <tr key={m.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="p-4"><img src={m.image || "/placeholder.png"} className="w-12 h-12 rounded object-cover" /></td>
+                <td className="p-4 font-medium">{m.name}</td>
                 <td className="p-4">{m.price}৳</td>
                 <td className="p-4">{m.stock}</td>
-                <td className="p-4 flex gap-4">
+                <td className="p-4 text-right flex justify-end gap-3">
                   <button onClick={() => { setEditingId(m.id); setFormData({name: m.name, price: m.price.toString(), stock: m.stock.toString()}); setIsModalOpen(true); }} className="text-blue-500"><Edit3 size={18} /></button>
                   <button onClick={() => handleDelete(m.id)} className="text-red-500"><Trash2 size={18} /></button>
                 </td>
@@ -86,16 +94,39 @@ export default function SellerMedicines() {
         </table>
       </div>
 
+      {/* Modal Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
-            <h2 className="font-bold text-xl mb-4">{editingId ? "Edit" : "Add"} Product</h2>
-            <input placeholder="Name" className="border w-full p-3 mb-3 rounded-lg" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-            <input placeholder="Price" className="border w-full p-3 mb-3 rounded-lg" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
-            <input placeholder="Stock" className="border w-full p-3 mb-3 rounded-lg" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} required />
-            <input type="file" className="w-full mb-4" onChange={e => setFile(e.target.files?.[0] || null)} />
-            <button className="bg-blue-600 text-white p-3 w-full rounded-lg font-bold">Save Changes</button>
-          </form>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">{editingId ? "Edit Product" : "Add New Product"}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400"><X /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Product Name</label>
+                <input required className="w-full mt-1 p-2.5 border rounded-lg" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Price</label>
+                  <input required type="number" className="w-full mt-1 p-2.5 border rounded-lg" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Stock</label>
+                  <input required type="number" className="w-full mt-1 p-2.5 border rounded-lg" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Image</label>
+                <input type="file" className="w-full mt-1 p-2 border rounded-lg" onChange={e => setFile(e.target.files?.[0] || null)} />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="w-full bg-gray-100 p-2.5 rounded-lg font-semibold hover:bg-gray-200">Cancel</button>
+                <button type="submit" className="w-full bg-blue-600 text-white p-2.5 rounded-lg font-semibold hover:bg-blue-700">Save Changes</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
