@@ -96,9 +96,12 @@ export const api = {
     cancel: (id: string) => fetcher(`/orders/${id}/cancel`, { method: "PATCH" }),
   },
 
-  seller: {
-    getOrders: () => fetcher("/seller/orders"),
+seller: {
+    // ব্যাকএন্ডের রাউট /api/orders এর সাথে সামঞ্জস্যপূর্ণ
+    getOrders: () => fetcher("/orders"), 
+    
+    // স্ট্যাটাস আপডেটের জন্য সঠিক পাথ:
     updateOrderStatus: (id: string, status: string) => 
-        fetcher(`/seller/orders/${id}/status`, { method: "PATCH", body: { status } }),
+        fetcher(`/orders/${id}/status`, { method: "PATCH", body: { status } }),
   }
 } as const;
