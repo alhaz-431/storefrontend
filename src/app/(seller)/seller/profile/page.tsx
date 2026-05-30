@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { User, Mail, Phone, MapPin, Edit3, Save, Loader2 } from "lucide-react";
+import { User, Mail, Phone, MapPin, Loader2, Save, X, Edit3 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 interface SellerData {
@@ -19,15 +18,10 @@ export default function SellerProfile() {
   const [updating, setUpdating] = useState(false);
   
   const [sellerInfo, setSellerInfo] = useState<SellerData>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    role: "Seller"
+    name: "", email: "", phone: "", address: "", role: "Seller"
   });
 
   const [tempData, setTempData] = useState<SellerData>({ ...sellerInfo });
-
   const API_BASE = "https://storemedistore.onrender.com/api";
 
   const loadProfileData = async () => {
@@ -38,7 +32,7 @@ export default function SellerProfile() {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
-      const user = data.data || data;
+      const user = data.user || data.data || data;
 
       if (user) {
         const fetchedData = {
@@ -58,33 +52,27 @@ export default function SellerProfile() {
     }
   };
 
-  useEffect(() => {
-    loadProfileData();
-  }, []);
+  useEffect(() => { loadProfileData(); }, []);
 
   const handleSave = async () => {
     setUpdating(true);
     const toastId = toast.loading("আপডেট হচ্ছে...");
     try {
       const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
-      
-      // যেহেতু ডাটাবেজে আপাতত শুধু 'name' আপডেট করার ফিল্ড আছে
-      const payload = { name: tempData.name };
-
       const res = await fetch(`${API_BASE}/auth/profile`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(tempData)
       });
 
       if (!res.ok) throw new Error("আপডেট ব্যর্থ হয়েছে");
 
       setSellerInfo(tempData);
       setIsEditing(false);
-      toast.success("সফলভাবে আপডেট হয়েছে!", { id: toastId });
+      toast.success("প্রোফাইল আপডেট হয়েছে!", { id: toastId });
     } catch (error) {
       toast.error("আপডেট করা সম্ভব হয়নি", { id: toastId });
     } finally {
@@ -100,41 +88,41 @@ export default function SellerProfile() {
 
   return (
     <div className="p-6 min-h-screen bg-slate-50">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-black">MY <span className="text-emerald-600">ACCOUNT</span></h1>
+      <div className="max-w-3xl mx-auto">
+        <div className="flex justify-between items-end mb-6">
+          <div>
+            <h1 className="text-4xl font-extrabold text-slate-800">My Account</h1>
+            <p className="text-slate-500">Manage your personal information</p>
+          </div>
           <button 
             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-            className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold transition hover:bg-emerald-700"
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isEditing ? "bg-emerald-600 text-white" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
           >
-            {isEditing ? (updating ? "Saving..." : "Save Changes") : "Edit Profile"}
+            {isEditing ? (updating ? <Loader2 className="animate-spin" size={18}/> : <Save size={18}/>) : <Edit3 size={18}/>}
+            {isEditing ? "Save Changes" : "Edit Profile"}
           </button>
         </div>
 
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Full Name</label>
-              <input 
-                disabled={!isEditing}
-                className="w-full p-3 mt-1 bg-slate-50 rounded-xl border border-slate-200"
-                value={isEditing ? tempData.name : sellerInfo.name}
-                onChange={e => setTempData({...tempData, name: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Email</label>
-              <input disabled className="w-full p-3 mt-1 bg-slate-100 rounded-xl border" value={sellerInfo.email} />
-            </div>
-            {/* Phone ও Address এর জন্য ডাটাবেজ আপডেট প্রয়োজন */}
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Phone</label>
-              <input disabled className="w-full p-3 mt-1 bg-slate-100 rounded-xl border" value={sellerInfo.phone || "N/A"} />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Address</label>
-              <input disabled className="w-full p-3 mt-1 bg-slate-100 rounded-xl border" value={sellerInfo.address || "N/A"} />
-            </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            {[ 
+              { label: "Full Name", key: "name", icon: User },
+              { label: "Email Address", key: "email", icon: Mail, disabled: true },
+              { label: "Phone Number", key: "phone", icon: Phone },
+              { label: "Delivery Address", key: "address", icon: MapPin }
+            ].map((field) => (
+              <div key={field.key}>
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <field.icon size={14} /> {field.label}
+                </label>
+                <input 
+                  disabled={!isEditing || field.disabled}
+                  className={`w-full p-4 rounded-xl border ${isEditing && !field.disabled ? "bg-white border-emerald-200 ring-2 ring-emerald-50" : "bg-slate-50 border-slate-200"} transition-all`}
+                  value={isEditing ? (tempData as any)[field.key] : (sellerInfo as any)[field.key]}
+                  onChange={e => setTempData({...tempData, [field.key]: e.target.value})}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>
