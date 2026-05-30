@@ -91,6 +91,8 @@ export const api = {
   orders: {
     create: (data: any) => fetcher("/orders", { method: "POST", body: data }),
     getAll: () => fetcher("/orders"),
+    // ✅ এখানে বসানো হয়েছে:
+    getById: (id: string) => fetcher(`/orders/${id}`),
     cancel: (id: string) => fetcher(`/orders/${id}/cancel`, { method: "PATCH" }),
   },
 
