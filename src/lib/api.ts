@@ -36,7 +36,7 @@ const fetcher = async (endpoint: string, options: CustomRequestInit = {}, isForm
     headers["Content-Type"] = "application/json";
   }
   
-  if (token) {
+  if (token && !headers["Authorization"]) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
@@ -78,6 +78,7 @@ export const api = {
   medicines: { 
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
+    // এখানে ...config যোগ করা হয়েছে যাতে টোকেন পাস হয়
     create: (data: any, config?: CustomRequestInit) => 
         fetcher("/medicines", { method: "POST", body: data, ...config }, true),
     update: (id: string, data: any, config?: CustomRequestInit) => 
@@ -91,16 +92,12 @@ export const api = {
   orders: {
     create: (data: any) => fetcher("/orders", { method: "POST", body: data }),
     getAll: () => fetcher("/orders"),
-    // ✅ এখানে বসানো হয়েছে:
     getById: (id: string) => fetcher(`/orders/${id}`),
     cancel: (id: string) => fetcher(`/orders/${id}/cancel`, { method: "PATCH" }),
   },
 
-seller: {
-    // ব্যাকএন্ডের রাউট /api/orders এর সাথে সামঞ্জস্যপূর্ণ
+  seller: {
     getOrders: () => fetcher("/orders"), 
-    
-    // স্ট্যাটাস আপডেটের জন্য সঠিক পাথ:
     updateOrderStatus: (id: string, status: string) => 
         fetcher(`/orders/${id}/status`, { method: "PATCH", body: { status } }),
   }
