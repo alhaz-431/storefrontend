@@ -39,32 +39,50 @@ export default function SellerMedicines() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       const data = new FormData();
+      
+      if (!formData.name || !formData.price || !formData.stock) {
+         toast.error("সব ফিল্ড পূরণ করুন!");
+         setLoading(false);
+         return;
+      }
+
       data.append("name", formData.name);
-      data.append("price", formData.price);
-      data.append("stock", formData.stock);
-      data.append("manufacturer", formData.manufacturer);
-      if (formData.imageFile) data.append("image", formData.imageFile);
+      data.append("price", formData.price.toString());
+      data.append("stock", formData.stock.toString());
+      data.append("manufacturer", formData.manufacturer || "Generic");
+      
+      if (formData.imageFile) {
+        data.append("image", formData.imageFile);
+      }
 
       const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
-      const config = { headers: { 'Authorization': `Bearer ${token}` } };
+      const config = { 
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data' 
+        } 
+      };
 
       if (editingMedicine) {
         await api.medicines.update(editingMedicine.id, data, config);
-        toast.success("Updated successfully!");
+        toast.success("Updated!");
       } else {
         await api.medicines.create(data, config);
-        toast.success("Added successfully!");
+        toast.success("Added!");
       }
       
       setIsModalOpen(false);
       fetchMedicines();
       setFormData({ name: "", price: "", stock: "", manufacturer: "", imageFile: null });
-    } catch (err: any) { toast.error(err.message || "Operation failed"); }
+    } catch (err: any) { 
+      console.log("Error details:", err.response?.data);
+      toast.error("Add failed. Console check kor.");
+    }
     finally { setLoading(false); }
   };
-
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure?")) return;
     const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
