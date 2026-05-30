@@ -15,57 +15,80 @@ export default function SellerMedicines() {
     try {
       const res = await api.medicines.getAll();
       setMedicines(Array.isArray(res) ? res : res.data || []);
-    } catch { toast.error("ডাটা লোড হয়নি"); }
+    } catch {
+      toast.error("ডাটা লোড হয়নি");
+    }
   };
 
-  useEffect(() => { fetchMedicines(); }, []);
+  useEffect(() => {
+    fetchMedicines();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     const data = new FormData();
     data.append("name", formData.name);
-    data.append("price", formData.price);
-    data.append("stock", formData.stock);
-    if (file) data.append("image", file);
+    data.append("price", formData.price.toString());
+    data.append("stock", formData.stock.toString());
+    
+    // আমি এখানে আপনার জন্য ক্যাটাগরি আইডিটি ডিফল্টভাবে যুক্ত করে দিলাম
+    data.append("categoryId", "cm9n6x4h10000abc123def"); 
+    
+    if (file) {
+      data.append("image", file);
+    }
 
     const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
-    const config = { headers: { 'Authorization': `Bearer ${token}` } };
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
 
     try {
-      if (editingId) await api.medicines.update(editingId, data, config);
-      else await api.medicines.create(data, config);
-      
-      toast.success("সফল হয়েছে!");
+      if (editingId) {
+        await api.medicines.update(editingId, data, config);
+        toast.success("আপডেট সফল!");
+      } else {
+        await api.medicines.create(data, config);
+        toast.success("নতুন মেডিসিন যুক্ত হয়েছে!");
+      }
+
       setIsModalOpen(false);
       fetchMedicines();
       setFormData({ name: "", price: "", stock: "" });
-    } catch { toast.error("সেভ করতে সমস্যা হয়েছে!"); }
+      setFile(null);
+    } catch (err: any) {
+      console.error("Submission Error:", err);
+      toast.error("সেভ করতে সমস্যা হয়েছে! কনসোল চেক করুন।");
+    }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("নিশ্চিত ডিলিট করতে চান?")) return;
+    if (!confirm("আপনি কি নিশ্চিত এটি ডিলিট করতে চান?")) return;
     const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
     try {
       await api.medicines.delete(id, { headers: { 'Authorization': `Bearer ${token}` } });
       fetchMedicines();
       toast.success("ডিলিট সফল!");
-    } catch { toast.error("ডিলিট হয়নি!"); }
+    } catch {
+      toast.error("ডিলিট করতে সমস্যা হয়েছে!");
+    }
   };
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      {/* Header Section */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-extrabold text-gray-800">Inventory Management</h1>
-        <button 
-          onClick={() => { setEditingId(null); setIsModalOpen(true); }} 
+        <button
+          onClick={() => { setEditingId(null); setFormData({ name: "", price: "", stock: "" }); setIsModalOpen(true); }}
           className="bg-green-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-green-700 transition"
         >
           <Plus size={20} /> Add Product
         </button>
       </div>
 
-      {/* Table Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-gray-50 border-b border-gray-200">
@@ -94,7 +117,6 @@ export default function SellerMedicines() {
         </table>
       </div>
 
-      {/* Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
