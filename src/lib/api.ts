@@ -26,18 +26,18 @@ interface CustomRequestInit extends RequestInit {
 
 const fetcher = async (endpoint: string, options: CustomRequestInit = {}, isFormData = false) => {
   const token = getCleanToken();
-  const headers: Record<string, string> = {};
-
-  if (options.headers) {
-    Object.assign(headers, options.headers);
+  
+  // ১. হেডার কপি করে নিন
+  const headers = new Headers(options.headers || {});
+  
+  // ২. Content-Type অটোমেশন
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
   }
   
-  if (!isFormData && !headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
-  }
-  
-  if (token && !headers["Authorization"]) {
-    headers["Authorization"] = `Bearer ${token}`;
+  // ৩. Authorization হেডার নিশ্চিত করা
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const fullUrl = `${BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
@@ -49,10 +49,11 @@ const fetcher = async (endpoint: string, options: CustomRequestInit = {}, isForm
 
   const res = await fetch(fullUrl, { 
     ...options, 
-    headers, 
+    headers: headers, // আপডেট করা হেডারগুলো এখানে বসান
     body: finalBody 
   });
   
+  // এরর হ্যান্ডলিং...
   if (res.status === 401) {
     if (typeof window !== "undefined") {
       localStorage.clear();

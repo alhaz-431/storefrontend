@@ -24,47 +24,7 @@ export default function SellerMedicines() {
     fetchMedicines();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("price", formData.price.toString());
-    data.append("stock", formData.stock.toString());
-    
-    // আমি এখানে আপনার জন্য ক্যাটাগরি আইডিটি ডিফল্টভাবে যুক্ত করে দিলাম
-    data.append("categoryId", "cm9n6x4h10000abc123def"); 
-    
-    if (file) {
-      data.append("image", file);
-    }
-
-    const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
-    const config = {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    };
-
-    try {
-      if (editingId) {
-        await api.medicines.update(editingId, data, config);
-        toast.success("আপডেট সফল!");
-      } else {
-        await api.medicines.create(data, config);
-        toast.success("নতুন মেডিসিন যুক্ত হয়েছে!");
-      }
-
-      setIsModalOpen(false);
-      fetchMedicines();
-      setFormData({ name: "", price: "", stock: "" });
-      setFile(null);
-    } catch (err: any) {
-      console.error("Submission Error:", err);
-      toast.error("সেভ করতে সমস্যা হয়েছে! কনসোল চেক করুন।");
-    }
-  };
-
+ 
   const handleDelete = async (id: string) => {
     if (!confirm("আপনি কি নিশ্চিত এটি ডিলিট করতে চান?")) return;
     const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
