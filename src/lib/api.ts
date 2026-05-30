@@ -28,7 +28,6 @@ const fetcher = async (endpoint: string, options: CustomRequestInit = {}, isForm
   const token = getCleanToken();
   const headers: Record<string, string> = {};
 
-  // Headers merge
   if (options.headers) {
     Object.assign(headers, options.headers);
   }
@@ -79,14 +78,10 @@ export const api = {
   medicines: { 
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
-    
-    // config প্যারামিটার যোগ করা হয়েছে যাতে TS এরর না দেয়
     create: (data: any, config?: CustomRequestInit) => 
         fetcher("/medicines", { method: "POST", body: data, ...config }, true),
-    
     update: (id: string, data: any, config?: CustomRequestInit) => 
         fetcher(`/medicines/${id}`, { method: "PATCH", body: data, ...config }, true),
-    
     delete: (id: string, config?: CustomRequestInit) => 
         fetcher(`/medicines/${id}`, { method: "DELETE", ...config }),
   },
@@ -97,5 +92,10 @@ export const api = {
     create: (data: any) => fetcher("/orders", { method: "POST", body: data }),
     getAll: () => fetcher("/orders"),
     cancel: (id: string) => fetcher(`/orders/${id}/cancel`, { method: "PATCH" }),
+  },
+
+  // ✅ নতুন যোগ করা হলো যাতে আপনার অর্ডার পেজে আর এরর না দেয়
+  seller: {
+    getOrders: () => fetcher("/seller/orders"),
   }
 } as const;
