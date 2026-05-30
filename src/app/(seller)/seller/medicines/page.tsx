@@ -44,16 +44,23 @@ export default function SellerMedicines() {
       fetchMedicines();
       setFormData({ name: "", price: "", stock: "", manufacturer: "" });
       setEditingId(null);
-    } catch (err: any) {
-      toast.error("সেভ করতে সমস্যা হয়েছে!");
-    }
+    } catch (err: any) { toast.error("সেভ করতে সমস্যা হয়েছে!"); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("আপনি কি নিশ্চিত এটি ডিলিট করতে চান?")) return;
+    const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
+    try {
+      await api.medicines.delete(id, { headers: { 'Authorization': `Bearer ${token}` } });
+      toast.success("ডিলিট সফল!");
+      fetchMedicines();
+    } catch { toast.error("ডিলিট করতে সমস্যা হয়েছে!"); }
   };
 
   return (
     <div className="p-4 md:p-10 w-full max-w-7xl mx-auto">
       <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold">+ Add Product</button>
       
-      {/* রেসপন্সিভ টেবিল */}
       <div className="mt-6 overflow-x-auto w-full bg-white shadow-sm rounded-xl border">
         <table className="w-full min-w-[500px] text-left">
           <thead className="bg-gray-50">
@@ -64,8 +71,9 @@ export default function SellerMedicines() {
               <tr key={m.id} className="border-t">
                 <td className="p-4 font-semibold">{m.name}</td>
                 <td className="p-4">{m.price}৳</td>
-                <td className="p-4 flex gap-3">
+                <td className="p-4 flex gap-4">
                   <button onClick={() => { setEditingId(m.id); setFormData({name: m.name, price: m.price.toString(), stock: m.stock.toString(), manufacturer: m.manufacturer || ""}); setIsModalOpen(true); }} className="text-blue-500"><Edit3 size={18} /></button>
+                  <button onClick={() => handleDelete(m.id)} className="text-red-500"><Trash2 size={18} /></button>
                 </td>
               </tr>
             ))}
