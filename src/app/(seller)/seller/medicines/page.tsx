@@ -37,39 +37,33 @@ export default function SellerMedicines() {
   useEffect(() => { fetchMedicines(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("price", formData.price.toString());
-    data.append("stock", formData.stock.toString());
-    data.append("manufacturer", formData.manufacturer || "Generic");
-    if (formData.imageFile) data.append("image", formData.imageFile);
-    // categoryId পাঠানোর দরকার নেই, ব্যাকএন্ড ডিফল্ট হ্যান্ডেল করবে।
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("price", formData.price || "0");
+      data.append("stock", formData.stock || "0");
+      data.append("manufacturer", formData.manufacturer || "Generic");
+      data.append("categoryId", "cm9n6x4h10000abc123def");
+      if (formData.imageFile) data.append("image", formData.imageFile);
 
-    const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
-    const config = { 
-      headers: { 
-        'Authorization': `Bearer ${token}` 
-        // মনে রাখবে: FormData পাঠালে Content-Type: multipart/form-data অটোমেটিক সেট হয়, ম্যানুয়ালি দেওয়ার দরকার নেই
-      } 
-    };
+      const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
+      const config = { headers: { 'Authorization': `Bearer ${token}` } };
 
-    if (editingMedicine) {
-      await api.medicines.update(editingMedicine.id, data, config);
-    } else {
-      await api.medicines.create(data, config);
-    }
-    
-    setIsModalOpen(false);
-    fetchMedicines();
-    setFormData({ name: "", price: "", stock: "", manufacturer: "", imageFile: null });
-    toast.success("সফল হয়েছে!");
-  } catch (err: any) { 
-    toast.error("ব্যর্থ হয়েছে, কনসোল চেক করো");
-  } finally { setLoading(false); }
-};
+      if (editingMedicine) {
+        await api.medicines.update(editingMedicine.id, data, config);
+      } else {
+        await api.medicines.create(data, config);
+      }
+      
+      setIsModalOpen(false);
+      fetchMedicines();
+      setFormData({ name: "", price: "", stock: "", manufacturer: "", imageFile: null });
+      toast.success("সফল হয়েছে!");
+    } catch (err: any) { toast.error("ব্যর্থ হয়েছে, কনসোল চেক করো"); }
+    finally { setLoading(false); }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure?")) return;
@@ -82,61 +76,31 @@ export default function SellerMedicines() {
   };
 
   return (
-    <div className="p-4 md:p-10 max-w-7xl mx-auto min-h-screen bg-slate-50 overflow-x-hidden">
+    <div className="p-4 md:p-10 max-w-7xl mx-auto min-h-screen bg-slate-50">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl md:text-3xl font-black text-slate-900">Inventory Management</h1>
-        <button 
-          onClick={() => { 
-            setEditingMedicine(null); 
-            setFormData({ name: "", price: "", stock: "", manufacturer: "", imageFile: null }); 
-            setIsModalOpen(true); 
-          }} 
-          className="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-green-700 whitespace-nowrap"
-        >
-          + Add Product
-        </button>
+        <h1 className="text-2xl font-black">Inventory Management</h1>
+        <button onClick={() => { setEditingMedicine(null); setIsModalOpen(true); }} className="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold">+ Add Product</button>
       </div>
-
-      {fetching ? <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-green-600" size={40}/></div> : (
-        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-x-auto">
-          <table className="w-full text-left min-w-[600px]">
-            <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold">
-              <tr><th className="px-8 py-5">Image</th><th className="px-8 py-5">Name</th><th className="px-8 py-5">Price</th><th className="px-8 py-5">Stock</th><th className="px-8 py-5 text-right">Actions</th></tr>
+      {fetching ? <Loader2 className="animate-spin mx-auto" /> : (
+        <div className="bg-white rounded-2xl shadow border overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50">
+              <tr><th className="px-8 py-4">Image</th><th className="px-8 py-4">Name</th><th className="px-8 py-4">Price</th><th className="px-8 py-4">Stock</th><th className="px-8 py-4 text-right">Actions</th></tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {medicines.map((m) => (
-                <tr key={m.id}>
-                  <td className="px-8 py-4"><img src={m.image || "https://placehold.co/50x50"} className="w-12 h-12 rounded-xl object-cover max-w-none" /></td>
+                <tr key={m.id} className="border-t">
+                  <td className="px-8 py-4"><img src={m.image || ""} className="w-12 h-12 object-cover rounded" /></td>
                   <td className="px-8 py-4 font-bold">{m.name}</td>
-                  <td className="px-8 py-4">৳{m.price}</td>
-                  <td className="px-8 py-4">{m.stock} PCS</td>
-                  <td className="px-8 py-4 text-right space-x-2">
-                    <button onClick={() => { setEditingMedicine(m); setFormData({...m, price: String(m.price), stock: String(m.stock)} as any); setIsModalOpen(true); }} className="p-2 text-blue-600 bg-blue-50 rounded-lg"><Edit3 size={18}/></button>
-                    <button onClick={() => handleDelete(m.id)} className="p-2 text-red-600 bg-red-50 rounded-lg"><Trash2 size={18}/></button>
+                  <td className="px-8 py-4">{m.price}৳</td>
+                  <td className="px-8 py-4">{m.stock}</td>
+                  <td className="px-8 py-4 text-right">
+                    <button onClick={() => handleDelete(m.id)} className="text-red-500">Delete</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white p-6 md:p-8 rounded-3xl w-full max-w-lg shadow-2xl relative">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full"><X size={20}/></button>
-            <h2 className="text-2xl font-black mb-6">{editingMedicine ? "Edit Product" : "Add New Product"}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input required placeholder="Medicine Name" className="w-full p-4 bg-slate-50 border rounded-2xl" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-              <div className="grid grid-cols-2 gap-4">
-                <input required type="number" placeholder="Price" className="w-full p-4 bg-slate-50 border rounded-2xl" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
-                <input required type="number" placeholder="Stock" className="w-full p-4 bg-slate-50 border rounded-2xl" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
-              </div>
-              <input placeholder="Manufacturer" className="w-full p-4 bg-slate-50 border rounded-2xl" value={formData.manufacturer} onChange={e => setFormData({...formData, manufacturer: e.target.value})} />
-              <input type="file" className="w-full p-4 bg-slate-50 border rounded-2xl" onChange={e => setFormData({...formData, imageFile: e.target.files?.[0] || null})} />
-              <button disabled={loading} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg">{loading ? "Saving..." : "Save Product"}</button>
-            </form>
-          </div>
         </div>
       )}
     </div>
