@@ -23,7 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex min-h-screen bg-gray-50 text-gray-700">
       
       {/* --- SIDEBAR --- */}
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-100 shadow-sm transition-all duration-300 ${isOpen ? "w-72" : "w-20"} lg:relative`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-gray-300 border-r border-gray-100 shadow-sm transition-all duration-300 ${isOpen ? "w-72" : "w-20"} lg:relative`}>
         <div className="flex flex-col h-full py-8">
           
           {/* Logo Section */}
