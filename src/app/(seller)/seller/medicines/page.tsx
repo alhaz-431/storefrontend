@@ -24,12 +24,45 @@ export default function SellerMedicines() {
     fetchMedicines();
   }, []);
 
- 
+  // --- এই ফাংশনটি মিসিং ছিল ---
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const data = new FormData();
+    data.append("name", formData.name);
+    data.append("price", formData.price);
+    data.append("stock", formData.stock);
+    data.append("categoryId", "cm9n6x4h10000abc123def"); // ব্যাকএন্ডের জন্য আইডি
+
+    if (file) {
+      data.append("image", file);
+    }
+
+    try {
+      if (editingId) {
+        await api.medicines.update(editingId, data);
+        toast.success("আপডেট সফল!");
+      } else {
+        await api.medicines.create(data);
+        toast.success("নতুন মেডিসিন যুক্ত হয়েছে!");
+      }
+
+      setIsModalOpen(false);
+      setEditingId(null);
+      setFormData({ name: "", price: "", stock: "" });
+      setFile(null);
+      fetchMedicines();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("সেভ করতে সমস্যা হয়েছে!");
+    }
+  };
+  // ---------------------------
+
   const handleDelete = async (id: string) => {
     if (!confirm("আপনি কি নিশ্চিত এটি ডিলিট করতে চান?")) return;
-    const token = localStorage.getItem("token")?.replace(/['"]+/g, '');
     try {
-      await api.medicines.delete(id, { headers: { 'Authorization': `Bearer ${token}` } });
+      await api.medicines.delete(id);
       fetchMedicines();
       toast.success("ডিলিট সফল!");
     } catch {
@@ -39,6 +72,7 @@ export default function SellerMedicines() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
+      {/* আপনার আগের JSX কোড এখানে একইভাবে থাকবে */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-extrabold text-gray-800">Inventory Management</h1>
         <button
@@ -51,6 +85,7 @@ export default function SellerMedicines() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full text-left">
+          {/* টেবিল হেডার ও বডি আগের মতোই রাখুন */}
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="p-4 font-semibold text-gray-600">Image</th>
@@ -84,6 +119,7 @@ export default function SellerMedicines() {
               <h2 className="text-xl font-bold">{editingId ? "Edit Product" : "Add New Product"}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400"><X /></button>
             </div>
+            {/* এখন handleSubmit এখানে কাজ করবে */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">Product Name</label>
