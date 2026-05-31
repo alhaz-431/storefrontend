@@ -27,15 +27,12 @@ interface CustomRequestInit extends RequestInit {
 const fetcher = async (endpoint: string, options: CustomRequestInit = {}, isFormData = false) => {
   const token = getCleanToken();
   
-  // ১. হেডার কপি করে নিন
   const headers = new Headers(options.headers || {});
   
-  // ২. Content-Type অটোমেশন
   if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   
-  // ৩. Authorization হেডার নিশ্চিত করা
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -49,11 +46,10 @@ const fetcher = async (endpoint: string, options: CustomRequestInit = {}, isForm
 
   const res = await fetch(fullUrl, { 
     ...options, 
-    headers: headers, // আপডেট করা হেডারগুলো এখানে বসান
+    headers: headers,
     body: finalBody 
   });
   
-  // এরর হ্যান্ডলিং...
   if (res.status === 401) {
     if (typeof window !== "undefined") {
       localStorage.clear();
@@ -87,7 +83,6 @@ export const api = {
         fetcher(`/medicines/${id}`, { method: "DELETE", ...config }),
   },
 
-  // এই অংশটুকু আপডেট হয়েছে
   categories: { 
     getAll: () => fetcher("/categories"),
     create: (data: any) => fetcher("/categories", { method: "POST", body: data }),
@@ -111,5 +106,6 @@ export const api = {
     getAllUsers: () => fetcher("/admin/users"),
     updateUserStatus: (id: string, status: string) => 
         fetcher(`/admin/users/${id}`, { method: "PATCH", body: { status } }),
+    getAllOrders: () => fetcher("/admin/orders"),
   }
 } as const;
