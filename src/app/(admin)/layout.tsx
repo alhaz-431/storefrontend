@@ -20,20 +20,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#02040a] text-slate-300">
+    <div className="flex min-h-screen bg-gray-50 text-gray-700">
       
       {/* --- SIDEBAR --- */}
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-white/[0.02] backdrop-blur-xl border-r border-white/5 transition-all duration-300 ${isOpen ? "w-72" : "w-20"} lg:relative`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-100 shadow-sm transition-all duration-300 ${isOpen ? "w-72" : "w-20"} lg:relative`}>
         <div className="flex flex-col h-full py-8">
           
           {/* Logo Section */}
           <div className="px-6 mb-12 flex items-center justify-between">
             {isOpen && (
               <h1 className="text-xl font-black italic text-blue-600 tracking-tighter">
-                MEDISTORE <span className="text-[10px] block not-italic font-bold text-white opacity-40 uppercase tracking-widest">Admin Control</span>
+                MEDISTORE <span className="text-[10px] block not-italic font-bold text-gray-400 uppercase tracking-widest">Admin Control</span>
               </h1>
             )}
-            <button onClick={() => setIsOpen(!isOpen)} className="p-2 hover:bg-white/5 rounded-xl transition-colors text-blue-500">
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-blue-600">
               {isOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
@@ -44,9 +44,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               const isActive = pathname === item.path;
               return (
                 <Link key={item.path} href={item.path}>
-                  <div className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all relative group cursor-pointer ${isActive ? "text-white" : "text-slate-500 hover:text-slate-300"}`}>
+                  <div className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all relative group cursor-pointer ${isActive ? "text-white shadow-md shadow-blue-500/30" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"}`}>
                     {isActive && (
-                      <motion.div layoutId="navActive" className="absolute inset-0 bg-blue-600 rounded-2xl shadow-lg shadow-blue-600/20" />
+                      <motion.div layoutId="navActive" className="absolute inset-0 bg-blue-600 rounded-2xl" />
                     )}
                     <span className="relative z-10">{item.icon}</span>
                     {isOpen && (
@@ -62,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* Logout Button */}
           <div className="px-4">
-            <button className="w-full flex items-center gap-4 px-4 py-4 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest">
+            <button className="w-full flex items-center gap-4 px-4 py-4 text-red-500 hover:bg-red-50 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest">
               <LogOut size={20} />
               {isOpen && "Logout System"}
             </button>
@@ -72,16 +72,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* --- MAIN CONTENT AREA --- */}
       <main className="flex-1 h-screen overflow-y-auto">
-        {/* উপরের ছোট নেভিগেশন বার (Optional) */}
-        <header className="px-10 py-6 border-b border-white/5 flex justify-end">
-           <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full border border-white/5">
-              <ShieldCheck size={16} className="text-blue-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Admin Mode</span>
+        {/* Header */}
+        <header className="px-10 py-6 bg-white border-b border-gray-100 flex justify-end sticky top-0 z-40">
+           <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+              <ShieldCheck size={16} className="text-blue-600" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">Admin Mode</span>
            </div>
         </header>
 
-        {/* এখানে আমাদের সব পেজ লোড হবে */}
-        <div className="max-w-7xl mx-auto">
+        {/* Content */}
+        <div className="p-6 md:p-10 max-w-7xl mx-auto">
             {children}
         </div>
       </main>
