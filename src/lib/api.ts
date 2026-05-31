@@ -79,7 +79,6 @@ export const api = {
   medicines: { 
     getAll: () => fetcher("/medicines"),
     getById: (id: string) => fetcher(`/medicines/${id}`),
-    // এখানে ...config যোগ করা হয়েছে যাতে টোকেন পাস হয়
     create: (data: any, config?: CustomRequestInit) => 
         fetcher("/medicines", { method: "POST", body: data, ...config }, true),
     update: (id: string, data: any, config?: CustomRequestInit) => 
@@ -88,7 +87,12 @@ export const api = {
         fetcher(`/medicines/${id}`, { method: "DELETE", ...config }),
   },
 
-  categories: { getAll: () => fetcher("/categories") },
+  // এই অংশটুকু আপডেট হয়েছে
+  categories: { 
+    getAll: () => fetcher("/categories"),
+    create: (data: any) => fetcher("/categories", { method: "POST", body: data }),
+    delete: (id: string) => fetcher(`/categories/${id}`, { method: "DELETE" }),
+  },
   
   orders: {
     create: (data: any) => fetcher("/orders", { method: "POST", body: data }),
@@ -101,5 +105,11 @@ export const api = {
     getOrders: () => fetcher("/orders"), 
     updateOrderStatus: (id: string, status: string) => 
         fetcher(`/orders/${id}/status`, { method: "PATCH", body: { status } }),
+  },
+
+  admin: {
+    getAllUsers: () => fetcher("/admin/users"),
+    updateUserStatus: (id: string, status: string) => 
+        fetcher(`/admin/users/${id}`, { method: "PATCH", body: { status } }),
   }
 } as const;
