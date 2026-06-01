@@ -7,7 +7,7 @@ import toast, { Toaster } from "react-hot-toast";
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null); // ডিটেইলস দেখার জন্য
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   const fetchOrders = async () => {
     try {
@@ -38,31 +38,32 @@ export default function OrdersPage() {
       <Toaster position="top-right" />
       
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-black uppercase text-gray-900 mb-8">Order History</h1>
+        <h1 className="text-xl md:text-3xl font-black uppercase text-gray-900 mb-6">Order History</h1>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
+        {/* রেসপন্সিভ টেবিল কন্টেইনার */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+          <table className="w-full text-left min-w-[500px]">
             <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-500">
               <tr>
-                <th className="px-6 py-4">Order ID</th>
-                <th className="px-6 py-4">Customer</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-center">Action</th>
+                <th className="px-4 py-4">Order ID</th>
+                <th className="px-4 py-4">Customer</th>
+                <th className="px-4 py-4">Status</th>
+                <th className="px-4 py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-blue-600">
-                     <span className="text-xs font-mono bg-blue-50 px-2 py-1 rounded">
-                        {order.id.slice(0, 8)}...
-                     </span>
+                  <td className="px-4 py-4 font-bold text-blue-600">
+                    <span className="text-[10px] md:text-xs font-mono bg-blue-50 px-2 py-1 rounded">
+                      {order.id.slice(0, 8)}...
+                    </span>
                   </td>
-                  <td className="px-6 py-4 font-bold uppercase text-gray-800">
+                  <td className="px-4 py-4 font-bold uppercase text-gray-800 text-[11px] md:text-sm">
                     {order.customer?.name || "N/A"}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
+                  <td className="px-4 py-4">
+                    <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase whitespace-nowrap ${
                       order.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-600' :
                       order.status === 'PROCESSING' ? 'bg-blue-50 text-blue-600' :
                       'bg-orange-50 text-orange-600'
@@ -70,11 +71,10 @@ export default function OrdersPage() {
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center">
-                    {/* ভিউ আইকনে ক্লিক হ্যান্ডলার যোগ করা হয়েছে */}
+                  <td className="px-4 py-4 text-center">
                     <button 
                       onClick={() => setSelectedOrder(order)}
-                      className="text-gray-400 hover:text-emerald-600 transition-colors"
+                      className="text-gray-400 hover:text-emerald-600 transition-colors p-1"
                     >
                       <Eye size={18} />
                     </button>
@@ -83,22 +83,24 @@ export default function OrdersPage() {
               ))}
             </tbody>
           </table>
+          {orders.length === 0 && <p className="p-6 text-center text-gray-400">কোনো অর্ডার নেই।</p>}
         </div>
       </div>
 
-      {/* সিম্পল Modal - ক্লিক করলে এটি দেখাবে */}
+      {/* অর্ডারের বিস্তারিত পপআপ */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="font-black uppercase">Order Details</h2>
-              <button onClick={() => setSelectedOrder(null)}><X size={20}/></button>
+              <h2 className="font-black uppercase text-sm">Order Details</h2>
+              <button onClick={() => setSelectedOrder(null)} className="p-1 hover:bg-gray-100 rounded-full">
+                <X size={20}/>
+              </button>
             </div>
-            <div className="space-y-2 text-sm">
-              <p><strong>ID:</strong> {selectedOrder.id}</p>
-              <p><strong>Customer:</strong> {selectedOrder.customer?.name}</p>
-              <p><strong>Status:</strong> {selectedOrder.status}</p>
-              
+            <div className="space-y-3 text-xs text-gray-600">
+              <p><strong className="text-black">ID:</strong> {selectedOrder.id}</p>
+              <p><strong className="text-black">Customer:</strong> {selectedOrder.customer?.name}</p>
+              <p><strong className="text-black">Status:</strong> {selectedOrder.status}</p>
             </div>
           </div>
         </div>
