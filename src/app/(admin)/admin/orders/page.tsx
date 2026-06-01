@@ -40,7 +40,6 @@ export default function OrdersPage() {
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-black uppercase text-gray-900 mb-8">Order History</h1>
 
-        {/* এখানে overflow-x-auto যোগ করেছি যাতে মোবাইলে টেবিলটি স্ক্রল করা যায় */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
           <table className="w-full text-left min-w-[500px]">
             <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-500">
@@ -84,17 +83,33 @@ export default function OrdersPage() {
         </div>
       </div>
 
+      {/* মডাল যেখানে ডিটেইলস দেখানো হবে */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-black uppercase">Order Details</h2>
-              <button onClick={() => setSelectedOrder(null)}><X size={20}/></button>
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-black uppercase text-lg">Order Details</h2>
+              <button onClick={() => setSelectedOrder(null)}><X size={24}/></button>
             </div>
-            <div className="space-y-2 text-sm">
-              <p><strong>ID:</strong> {selectedOrder.id}</p>
-              <p><strong>Customer:</strong> {selectedOrder.customer?.name}</p>
-              <p><strong>Status:</strong> {selectedOrder.status}</p>
+            
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl">
+                <p><strong>ID:</strong> <span className="text-blue-600 font-mono text-xs">{selectedOrder.id}</span></p>
+                <p><strong>Customer:</strong> {selectedOrder.customer?.name}</p>
+                <p><strong>Status:</strong> {selectedOrder.status}</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold mb-2 uppercase text-xs text-gray-500">Medicines Ordered:</h3>
+                <div className="border rounded-xl divide-y">
+                  {selectedOrder.orderItems?.map((item: any, index: number) => (
+                    <div key={index} className="p-3 flex justify-between items-center">
+                      <span className="font-semibold text-gray-800">{item.medicine?.name || "Unknown Medicine"}</span>
+                      <span className="text-xs font-bold bg-gray-100 px-2 py-1 rounded">Qty: {item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
