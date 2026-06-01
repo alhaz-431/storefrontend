@@ -12,11 +12,9 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
       const data = await api.admin.getAllUsers();
-      // ডাটা লগ করে দেখুন কনসোলে কী আসছে
-      console.log("Users:", data); 
       setUsers(data || []);
     } catch (err) {
-      toast.error("ইউজারদের তালিকা আনতে ব্যর্থ হয়েছে");
+      toast.error("ইউজারদের তালিকা আনতে ব্যর্থ হয়েছে");
     } finally {
       setLoading(false);
     }
@@ -29,10 +27,10 @@ export default function UserManagementPage() {
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       await api.admin.updateUserStatus(id, newStatus);
-      toast.success(`ইউজার স্ট্যাটাস আপডেট হয়েছে`);
+      toast.success(`ইউজার স্ট্যাটাস ${newStatus} করা হয়েছে`);
       fetchUsers();
     } catch (err) {
-      toast.error("স্ট্যাটাস পরিবর্তন করা যায়নি");
+      toast.error("স্ট্যাটাস পরিবর্তন করা যায়নি");
     }
   };
 
@@ -53,22 +51,22 @@ export default function UserManagementPage() {
           User Management
         </h1>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
+        {/* টেবিলের চারপাশে overflow-x-auto যোগ করা হয়েছে যাতে মোবাইলে স্ক্রল করা যায় */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+          <table className="w-full text-left min-w-[400px]">
             <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-500">
               <tr>
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Actions</th>
+                <th className="px-4 py-4">Name</th>
+                <th className="px-4 py-4">Status</th>
+                <th className="px-4 py-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-gray-800">{user.name}</td>
-                  <td className="px-6 py-4">
-                    {/* স্ট্যাটাস রেন্ডারিং লজিক আপডেট করা হয়েছে */}
-                    <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
+                  <td className="px-4 py-4 font-bold text-gray-800 text-sm whitespace-nowrap">{user.name}</td>
+                  <td className="px-4 py-4">
+                    <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase whitespace-nowrap ${
                       user.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 
                       user.status === 'BANNED' ? 'bg-red-50 text-red-600' : 
                       'bg-gray-100 text-gray-400'
@@ -76,18 +74,18 @@ export default function UserManagementPage() {
                       {user.status || "UNKNOWN"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 flex gap-2">
+                  <td className="px-4 py-4 flex gap-1">
                     <button 
                       onClick={() => handleStatusChange(user.id, "BANNED")}
-                      className="flex items-center gap-1 text-[10px] font-black uppercase bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
+                      className="flex items-center gap-1 text-[9px] font-black uppercase bg-red-50 text-red-600 px-2 py-1.5 rounded-lg hover:bg-red-100 transition-colors whitespace-nowrap"
                     >
-                      <ShieldAlert size={12} /> Ban
+                      <ShieldAlert size={10} /> Ban
                     </button>
                     <button 
                       onClick={() => handleStatusChange(user.id, "ACTIVE")}
-                      className="flex items-center gap-1 text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors"
+                      className="flex items-center gap-1 text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 px-2 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors whitespace-nowrap"
                     >
-                      <ShieldCheck size={12} /> Unban
+                      <ShieldCheck size={10} /> Unban
                     </button>
                   </td>
                 </tr>
@@ -96,7 +94,7 @@ export default function UserManagementPage() {
           </table>
           
           {users.length === 0 && (
-            <div className="p-10 text-center text-gray-400">কোনো ইউজার পাওয়া যায়নি।</div>
+            <div className="p-10 text-center text-gray-400">কোনো ইউজার পাওয়া যায়নি।</div>
           )}
         </div>
       </div>
