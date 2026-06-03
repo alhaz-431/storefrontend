@@ -54,10 +54,9 @@ export default function CheckoutPage() {
   }, 0);
 
   const handlePlaceOrder = async () => {
-    // 1️⃣ সিকিউরিটি চেক: একদম বাটন ক্লিকের মুহূর্তে টোকেন আছে কিনা দেখে নেওয়া
     const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!currentToken) {
-      toast.error("আপনার লগইন সেশন পাওয়া যায়নি! দয়া করে আবার লগইন করুন।");
+      toast.error("আপনার লগইন সেশন পাওয়া যায়নি! দয়া করে আবার লগইন করুন।");
       router.push("/login");
       return;
     }
@@ -91,32 +90,24 @@ export default function CheckoutPage() {
         shippingPhone: shippingPhone.trim()
       };
 
-      console.log("Sending clean payload to backend:", orderData);
-
-      // এপিআই কল
       const resData = await api.orders.create(orderData);
-      console.log("Backend Response Actual Data:", resData);
 
       if (resData) {
         localStorage.removeItem("medistore_cart");
-        // কার্ট আপডেট করার গ্লোবাল ইভেন্ট ফায়ার
         window.dispatchEvent(new Event("cartUpdated"));
         toast.success("Checkout Successful! 🎉", { id: toastId });
 
-        // রাউটিং ইমপ্রুভমেন্ট: টোস্ট মেসেজ দেখার জন্য সামান্য ১০ মিলি সেকেন্ড বাফারিং ও পুশ
         setTimeout(() => {
-          router.refresh(); // ক্যাশ ক্লিয়ার করতে রাউট রিফ্রেশ
+          router.refresh();
           router.push("/customer/orders");
           if (typeof window !== "undefined") {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }
         }, 10);
-        
       } else {
         throw new Error("অর্ডার প্রসেস করা সম্ভব হয়নি");
       }
     } catch (error: any) {
-      console.error("Detailed Checkout Error Object:", error);
       const message = error.message || "অর্ডার প্লেস করতে সমস্যা হয়েছে";
       toast.error(message, { id: toastId });
     } finally {
@@ -125,11 +116,9 @@ export default function CheckoutPage() {
   };
 
   return (
-    /* 🎯 গ্লোবাল ডার্ক ডেটল গ্রিন ব্যাকগ্রাউন্ড মিক্স */
     <div className="min-h-screen bg-[#020d0a] bg-[radial-gradient(circle_at_top_right,_#006643,_#020d0a)] text-slate-200 py-8 sm:py-12 md:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative z-10">
         
-        {/* 📦 বাম পাশ: Delivery Details Form */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
           <div>
             <h1 className="text-3xl md:text-5xl font-black text-slate-100 uppercase tracking-tight">
@@ -148,7 +137,6 @@ export default function CheckoutPage() {
 
             <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* রিসিভার নেম ইনপুট */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Receiver Name</label>
                   <div className="relative">
@@ -163,7 +151,6 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 
-                {/* ফোন নাম্বার ইনপুট */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Phone Number</label>
                   <div className="relative">
@@ -179,7 +166,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* ফুল অ্যাড্রেস টেক্সট-এরিয়া */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Full Delivery Address</label>
                 <textarea 
@@ -190,7 +176,6 @@ export default function CheckoutPage() {
                 />
               </div>
 
-              {/* পেমেন্ট মেথড ইনফো */}
               <div className="bg-[#006643]/10 border border-[#006643]/20 p-5 rounded-2xl flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-[#006643] rounded-xl flex items-center justify-center text-white shadow-md">
@@ -207,17 +192,16 @@ export default function CheckoutPage() {
           </div>
         </motion.div>
 
-        {/* 💰 ডান পাশ: Order Summary Panel */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="lg:mt-16">
           <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 md:p-10 shadow-lg backdrop-blur-md sticky top-24">
             <h2 className="text-2xl font-black text-slate-200 uppercase tracking-tight mb-8 pb-4 border-b border-white/5">
-               Order <span className="text-[#006643]">Summary</span>
+                Order <span className="text-[#006643]">Summary</span>
             </h2>
 
             <div className="space-y-5 mb-8">
                <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Subtotal Amount</span>
-                  <span className="text-lg font-bold text-slate-200">৳{totalAmount}</span>
+                  <span className="text-lg font-bold text-slate-200">৳{Number(totalAmount).toFixed(2)}</span>
                </div>
                <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Shipping Fee</span>
@@ -226,11 +210,12 @@ export default function CheckoutPage() {
                <div className="h-[1px] w-full bg-white/5" />
                <div className="flex justify-between items-end pt-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[#006643] mb-1">Grand Total</span>
-                  <span className="text-4xl md:text-5xl font-black text-slate-100 tracking-tight">৳{totalAmount}</span>
+                  <span className="text-4xl md:text-5xl font-black text-slate-100 tracking-tight truncate block max-w-[200px]">
+                    ৳{Number(totalAmount).toFixed(2)}
+                  </span>
                </div>
             </div>
 
-            {/* সাবমিট কনফার্ম বাটন */}
             <button
               onClick={handlePlaceOrder}
               disabled={loading}
@@ -250,11 +235,10 @@ export default function CheckoutPage() {
             </button>
             
             <p className="text-center mt-6 text-[9px] font-bold uppercase tracking-wider text-slate-600">
-               By placing this order you agree to our terms of service
+                By placing this order you agree to our terms of service
             </p>
           </div>
         </motion.div>
-
       </div>
     </div>
   );
